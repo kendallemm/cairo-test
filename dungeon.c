@@ -17,11 +17,15 @@
  *  along with This program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h> // powf
+
 #include <SDL.h>
 #include <cairo.h>
 
 const int height = 640;
 const int width  = 640;
+const int door_height = 7.0;
+const int door_width  = 5.0;
 
 SDL_Window   *window;
 SDL_Renderer *renderer;
@@ -39,68 +43,157 @@ void window_setup (void)
 	);
 }
 
-void l_wall_2(cairo_t *cr)
+void door_outline_color(cairo_t *cr)
 {
-	cairo_move_to(cr, 160.0, 160.0);
-	cairo_line_to(cr, 240.0, 240.0);
-	cairo_line_to(cr, 240.0, 400.0);
-	cairo_line_to(cr, 160.0, 480.0);
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 }
 
-void r_wall_2(cairo_t *cr)
+void door_fill_color(cairo_t *cr)
 {
-	cairo_move_to(cr, 480.0, 160.0);
-	cairo_line_to(cr, 400.0, 240.0);
-	cairo_line_to(cr, 400.0, 400.0);
-	cairo_line_to(cr, 480.0, 480.0);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 }
 
-void wall_2(cairo_t *cr)
+void eye_3_to_2(float x, float y, float z, float *out_x, float *out_y)
 {
-	cairo_move_to(cr, 240.0, 240.0);
-	cairo_line_to(cr, 400.0, 240.0);
-	cairo_line_to(cr, 400.0, 400.0);
-	cairo_line_to(cr, 240.0, 400.0);
-	cairo_line_to(cr, 240.0, 240.0);
+	float z_coeff  = 0.0;
+	
+	z_coeff = pow(2, 0-(z / 10.0));
+
+	*out_x = (x-5) * z_coeff + 5.0;
+	*out_y = (y-5) * z_coeff + 5.0;
 }
 
-void dead_end_2(cairo_t *cr)
+void convert_cairo3(cairo_t *cr, float x, float y, float z, void (*fn)(cairo_t *, double, double))
 {
-	l_wall_2(cr);
-	r_wall_2(cr);
-	wall_2(cr);
+	float x2, y2;
+	eye_3_to_2(x, y, z, &x2, &y2);
+	fn(cr, (x2/10.0 * width), y2/10.0 * height);
 }
 
-void l_wall_1(cairo_t *cr)
+void move_to_3(cairo_t *cr, float x, float y, float z)
 {
-	cairo_move_to(cr, 0.0, 0.0);
-	cairo_line_to(cr, 160.0, 160.0);
-	cairo_line_to(cr, 160.0, 480.0);
-	cairo_line_to(cr, 0.0, 640.0);
+	convert_cairo3(cr, x, y, z, cairo_move_to);
 }
 
-void r_wall_1(cairo_t *cr)
+void line_to_3(cairo_t *cr, float x, float y, float z)
 {
-	cairo_move_to(cr, 640.0, 0.0);
-	cairo_line_to(cr, 480.0, 160.0);
-	cairo_line_to(cr, 480.0, 480.0);
-	cairo_line_to(cr, 640.0, 640.0);
+	convert_cairo3(cr, x, y, z, cairo_line_to);
 }
 
-void wall_1(cairo_t *cr)
+void wall(cairo_t *cr, float distance)
 {
-	cairo_move_to(cr, 160.0, 160.0);
-	cairo_line_to(cr, 480.0, 160.0);
-	cairo_line_to(cr, 480.0, 480.0);
-	cairo_line_to(cr, 160.0, 480.0);
-	cairo_line_to(cr, 160.0, 160.0);
+	/*
+		distance 10, dimension = 320
+		distance 20, dimension = 160
+		distance 30, dimension = 80
+		distance 40, dimension = 40
+		distance 50, dimension = 20
+
+		dimension =      width
+                  ------------------
+                   (distance / 10.0)
+                  2
+	*/
+	
+	float dimension = (float)width / powf(2, distance / 10.0);
+	float top  = ((float) height - dimension) / 2.0;
+	float left = ((float) width  - dimension) / 2.0;
+	float bottom = top + dimension;
+	float right  = left + dimension;
+
+	printf ("Drawing a flat wall @ distance %f -- dimension %f\n",
+				distance, dimension);
+	printf ("Corners at (%f, %f) - (%f, %f)\n", left, top, right, bottom);
+
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	cairo_move_to(cr, left, top);
+	cairo_line_to(cr, right, top);
+	cairo_line_to(cr, right, bottom);
+	cairo_line_to(cr, left, bottom);
+	cairo_line_to(cr, left, top);
+	cairo_stroke_preserve(cr);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_fill(cr);
 }
 
-void dead_end_1(cairo_t *cr)
+void other_wall(cairo_t *cr, float distance)
 {
-	l_wall_1(cr);
-	r_wall_1(cr);
-	wall_1(cr);
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	move_to_3(cr, 0.0, 0.0, distance);
+	line_to_3(cr, 10.0, 0.0, distance);
+	line_to_3(cr, 10.0, 10.0, distance);
+	line_to_3(cr, 0.0, 10.0, distance);
+	line_to_3(cr, 0.0, 0.0, distance);
+	cairo_stroke_preserve(cr);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_fill(cr);
+}
+
+
+
+void draw_shape(cairo_t *cr, float(*points)[3], int npoints)
+{
+	float (*point)[3] = points;
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	move_to_3(cr, *points[0], *points[1], *points[2]);
+	while (npoints--) {
+		line_to_3(cr, *point[0], *point[1], *point[3]);
+	}
+	line_to_3(cr, *points[0], *points[1], *points[2]);
+	cairo_stroke_preserve(cr);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_fill(cr);
+}
+
+void other_wall_2(cairo_t *cr, float distance)
+{
+	float shape[4][3] = {
+		{0.0, 0.0, 0.0},
+		{10.0, 0.0, 0.0},
+		{10.0, 10.0, 0.0},
+		{0.0, 10.0, 0.0},
+	};
+	shape[0][2] = shape[1][2] = shape[2][2] = shape[3][2] = distance;
+	draw_shape(cr, shape, 4);
+}
+
+void other_left_wall(cairo_t *cr, float distance)
+{
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	move_to_3(cr, 0.0, 0.0, distance);
+	line_to_3(cr, 0.0, 0.0, distance+10.0);
+	line_to_3(cr, 0.0, 10.0, distance+10.0);
+	line_to_3(cr, 0.0, 10.0, distance);
+	line_to_3(cr, 0.0, 0.0, distance);
+	cairo_stroke_preserve(cr);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_fill(cr);
+}
+
+void other_left_door(cairo_t *cr, float distance)
+{
+	door_outline_color(cr);
+	move_to_3(cr, 0.0, 10.0, distance);
+	line_to_3(cr, 0.0, 10.0-door_height, distance);
+	line_to_3(cr, 0.0, 10.0-door_height, distance+door_width);
+	line_to_3(cr, 0.0, 10.0, distance+door_width);
+	line_to_3(cr, 0.0, 10.0, distance);
+	cairo_stroke_preserve(cr);
+	door_fill_color(cr);
+	cairo_fill(cr);
+}
+
+void other_right_wall(cairo_t *cr, float distance)
+{
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	move_to_3(cr, 10.0, 0.0, distance);
+	line_to_3(cr, 10.0, 0.0, distance+10.0);
+	line_to_3(cr, 10.0, 10.0, distance+10.0);
+	line_to_3(cr, 10.0, 10.0, distance);
+	line_to_3(cr, 10.0, 0.0, distance);
+	cairo_stroke_preserve(cr);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_fill(cr);
 }
 
 void paint(void)
@@ -127,10 +220,13 @@ void paint(void)
 		cairo_move_to(cr, 50.0, 50.0);
 		cairo_line_to(cr, 100.0, 100.0);
 */
-		dead_end_2(cr);
-		l_wall_1(cr);
-		r_wall_1(cr);
-		cairo_stroke(cr);
+		other_wall(cr, 20.0);
+		other_left_wall(cr, 10.0);
+		other_right_wall(cr, 10.0);
+		other_left_wall(cr, 0.0);
+		other_right_wall(cr, 0.0);
+		other_left_door(cr, 2.5);
+
 		cairo_destroy(cr);
 		// should I do this?
 		cairo_surface_destroy(cairo_surface);
