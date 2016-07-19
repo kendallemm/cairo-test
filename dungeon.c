@@ -50,7 +50,7 @@ void door_outline_color(cairo_t *cr)
 
 void door_fill_color(cairo_t *cr)
 {
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_set_source_rgb(cr, 0.5, 0.5, 0.0);
 }
 
 void wall_outline_color(cairo_t *cr)
