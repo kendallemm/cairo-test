@@ -183,6 +183,26 @@ void door(cairo_t *cr, float distance)
 	cairo_fill(cr);
 }
 
+void open_door(cairo_t *cr, float distance)
+{
+	float door_start = (10.0 - door_width) / 2;
+	float door_end   = door_width + door_start;
+
+	wall_outline_color(cr);
+	move_to_3(cr, 0.0, 0.0, distance);
+	line_to_3(cr, door_start, 0.0, distance);
+	line_to_3(cr, door_start, door_height, distance);
+	line_to_3(cr, door_end, door_height, distance);
+	line_to_3(cr, door_end, 0.0, distance);
+	line_to_3(cr, 10.0, 0.0, distance);
+	line_to_3(cr, 10.0, 10.0, distance);
+	line_to_3(cr, 0.0, 10.0, distance);
+	line_to_3(cr, 0.0, 0.0, distance);
+	cairo_stroke_preserve(cr);
+	wall_fill_color(cr);
+	cairo_fill(cr);
+}
+
 void right_wall(cairo_t *cr, float distance)
 {
 	wall_outline_color(cr);
@@ -228,6 +248,7 @@ void paint(void)
 		left_door(cr, 2.5);
 		right_door(cr, 12.5);
 		door(cr, 20.0);
+		open_door(cr, 0.0);
 
 		cairo_destroy(cr);
 		// should I do this?
