@@ -53,6 +53,16 @@ void door_fill_color(cairo_t *cr)
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 }
 
+void wall_outline_color(cairo_t *cr)
+{
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+}
+
+void wall_fill_color(cairo_t *cr)
+{
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+}
+
 void eye_3_to_2(float x, float y, float z, float *out_x, float *out_y)
 {
 	float z_coeff  = 0.0;
@@ -67,7 +77,7 @@ void convert_cairo3(cairo_t *cr, float x, float y, float z, void (*fn)(cairo_t *
 {
 	float x2, y2;
 	eye_3_to_2(x, y, z, &x2, &y2);
-	fn(cr, (x2/10.0 * width), y2/10.0 * height);
+	fn(cr, (x2/10.0 * width), (10.0 - y2)/10.0 * height);
 }
 
 void move_to_3(cairo_t *cr, float x, float y, float z)
@@ -82,54 +92,16 @@ void line_to_3(cairo_t *cr, float x, float y, float z)
 
 void wall(cairo_t *cr, float distance)
 {
-	/*
-		distance 10, dimension = 320
-		distance 20, dimension = 160
-		distance 30, dimension = 80
-		distance 40, dimension = 40
-		distance 50, dimension = 20
-
-		dimension =      width
-                  ------------------
-                   (distance / 10.0)
-                  2
-	*/
-	
-	float dimension = (float)width / powf(2, distance / 10.0);
-	float top  = ((float) height - dimension) / 2.0;
-	float left = ((float) width  - dimension) / 2.0;
-	float bottom = top + dimension;
-	float right  = left + dimension;
-
-	printf ("Drawing a flat wall @ distance %f -- dimension %f\n",
-				distance, dimension);
-	printf ("Corners at (%f, %f) - (%f, %f)\n", left, top, right, bottom);
-
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-	cairo_move_to(cr, left, top);
-	cairo_line_to(cr, right, top);
-	cairo_line_to(cr, right, bottom);
-	cairo_line_to(cr, left, bottom);
-	cairo_line_to(cr, left, top);
-	cairo_stroke_preserve(cr);
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	cairo_fill(cr);
-}
-
-void other_wall(cairo_t *cr, float distance)
-{
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	wall_outline_color(cr);
 	move_to_3(cr, 0.0, 0.0, distance);
 	line_to_3(cr, 10.0, 0.0, distance);
 	line_to_3(cr, 10.0, 10.0, distance);
 	line_to_3(cr, 0.0, 10.0, distance);
 	line_to_3(cr, 0.0, 0.0, distance);
 	cairo_stroke_preserve(cr);
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	wall_fill_color(cr);
 	cairo_fill(cr);
 }
-
-
 
 void draw_shape(cairo_t *cr, float(*points)[3], int npoints)
 {
@@ -145,7 +117,7 @@ void draw_shape(cairo_t *cr, float(*points)[3], int npoints)
 	cairo_fill(cr);
 }
 
-void other_wall_2(cairo_t *cr, float distance)
+void wall_2(cairo_t *cr, float distance)
 {
 	float shape[4][3] = {
 		{0.0, 0.0, 0.0},
@@ -157,42 +129,55 @@ void other_wall_2(cairo_t *cr, float distance)
 	draw_shape(cr, shape, 4);
 }
 
-void other_left_wall(cairo_t *cr, float distance)
+void left_wall(cairo_t *cr, float distance)
 {
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	wall_outline_color(cr);
 	move_to_3(cr, 0.0, 0.0, distance);
 	line_to_3(cr, 0.0, 0.0, distance+10.0);
 	line_to_3(cr, 0.0, 10.0, distance+10.0);
 	line_to_3(cr, 0.0, 10.0, distance);
 	line_to_3(cr, 0.0, 0.0, distance);
 	cairo_stroke_preserve(cr);
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	wall_fill_color(cr);
 	cairo_fill(cr);
 }
 
-void other_left_door(cairo_t *cr, float distance)
+void left_door(cairo_t *cr, float distance)
 {
 	door_outline_color(cr);
-	move_to_3(cr, 0.0, 10.0, distance);
-	line_to_3(cr, 0.0, 10.0-door_height, distance);
-	line_to_3(cr, 0.0, 10.0-door_height, distance+door_width);
-	line_to_3(cr, 0.0, 10.0, distance+door_width);
-	line_to_3(cr, 0.0, 10.0, distance);
+	move_to_3(cr, 0.0, 0.0, distance);
+	line_to_3(cr, 0.0, door_height, distance);
+	line_to_3(cr, 0.0, door_height, distance+door_width);
+	line_to_3(cr, 0.0, 0.0, distance+door_width);
+	line_to_3(cr, 0.0, 0.0, distance);
 	cairo_stroke_preserve(cr);
 	door_fill_color(cr);
 	cairo_fill(cr);
 }
 
-void other_right_wall(cairo_t *cr, float distance)
+void right_door(cairo_t *cr, float distance)
 {
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	door_outline_color(cr);
+	move_to_3(cr, 10.0, 0.0, distance);
+	line_to_3(cr, 10.0, door_height, distance);
+	line_to_3(cr, 10.0, door_height, distance+door_width);
+	line_to_3(cr, 10.0, 0.0, distance+door_width);
+	line_to_3(cr, 10.0, 0.0, distance);
+	cairo_stroke_preserve(cr);
+	door_fill_color(cr);
+	cairo_fill(cr);
+}
+
+void right_wall(cairo_t *cr, float distance)
+{
+	wall_outline_color(cr);
 	move_to_3(cr, 10.0, 0.0, distance);
 	line_to_3(cr, 10.0, 0.0, distance+10.0);
 	line_to_3(cr, 10.0, 10.0, distance+10.0);
 	line_to_3(cr, 10.0, 10.0, distance);
 	line_to_3(cr, 10.0, 0.0, distance);
 	cairo_stroke_preserve(cr);
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	wall_fill_color(cr);
 	cairo_fill(cr);
 }
 
@@ -220,12 +205,13 @@ void paint(void)
 		cairo_move_to(cr, 50.0, 50.0);
 		cairo_line_to(cr, 100.0, 100.0);
 */
-		other_wall(cr, 20.0);
-		other_left_wall(cr, 10.0);
-		other_right_wall(cr, 10.0);
-		other_left_wall(cr, 0.0);
-		other_right_wall(cr, 0.0);
-		other_left_door(cr, 2.5);
+		wall(cr, 20.0);
+		left_wall(cr, 10.0);
+		right_wall(cr, 10.0);
+		left_wall(cr, 0.0);
+		right_wall(cr, 0.0);
+		left_door(cr, 2.5);
+		right_door(cr, 12.5);
 
 		cairo_destroy(cr);
 		// should I do this?
