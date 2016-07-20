@@ -203,6 +203,32 @@ void open_door(cairo_t *cr, float distance)
 	cairo_fill(cr);
 }
 
+void open_door_side(cairo_t *cr)
+{
+	float wall_depth = 2.0;
+	float wall_start = (10.0-wall_depth)/2.0;
+	float jamb_dist = door_width / 2.0;
+
+	door_outline_color(cr);
+	move_to_3(cr, wall_start, 0.0, jamb_dist);
+	line_to_3(cr, wall_start, door_height, jamb_dist);
+	line_to_3(cr, wall_start + wall_depth, door_height, jamb_dist);
+	line_to_3(cr, wall_start + wall_depth, 0.0, jamb_dist);
+	line_to_3(cr, wall_start, 0.0, jamb_dist);
+	cairo_stroke_preserve(cr);
+	door_fill_color(cr);
+	cairo_fill(cr);
+	door_outline_color(cr);
+	move_to_3(cr, wall_start, door_height, jamb_dist);
+	line_to_3(cr, wall_start, 10.0, 0.0);
+	line_to_3(cr, wall_start + wall_depth, 10.0, 0.0);
+	line_to_3(cr, wall_start + wall_depth, door_height, jamb_dist);
+	line_to_3(cr, wall_start, door_height, jamb_dist);
+	cairo_stroke_preserve(cr);
+	door_fill_color(cr);
+	cairo_fill(cr);
+}
+
 void right_wall(cairo_t *cr, float distance)
 {
 	wall_outline_color(cr);
