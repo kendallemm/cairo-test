@@ -27,6 +27,8 @@ const int width  = 640;
 const int door_height = 7.0;
 const int door_width  = 5.0;
 
+float left_bias = 0.0;
+
 SDL_Window   *window;
 SDL_Renderer *renderer;
 SDL_Texture  *texture;
@@ -93,11 +95,11 @@ void line_to_3(cairo_t *cr, float x, float y, float z)
 void wall(cairo_t *cr, float distance)
 {
 	wall_outline_color(cr);
-	move_to_3(cr, 0.0, 0.0, distance);
-	line_to_3(cr, 10.0, 0.0, distance);
-	line_to_3(cr, 10.0, 10.0, distance);
-	line_to_3(cr, 0.0, 10.0, distance);
-	line_to_3(cr, 0.0, 0.0, distance);
+	move_to_3(cr, left_bias, 0.0, distance);
+	line_to_3(cr, left_bias + 10.0, 0.0, distance);
+	line_to_3(cr, left_bias + 10.0, 10.0, distance);
+	line_to_3(cr, left_bias, 10.0, distance);
+	line_to_3(cr, left_bias, 0.0, distance);
 	cairo_stroke_preserve(cr);
 	wall_fill_color(cr);
 	cairo_fill(cr);
@@ -132,11 +134,11 @@ void wall_2(cairo_t *cr, float distance)
 void left_wall(cairo_t *cr, float distance)
 {
 	wall_outline_color(cr);
-	move_to_3(cr, 0.0, 0.0, distance);
-	line_to_3(cr, 0.0, 0.0, distance+10.0);
-	line_to_3(cr, 0.0, 10.0, distance+10.0);
-	line_to_3(cr, 0.0, 10.0, distance);
-	line_to_3(cr, 0.0, 0.0, distance);
+	move_to_3(cr, left_bias, 0.0, distance);
+	line_to_3(cr, left_bias, 0.0, distance+10.0);
+	line_to_3(cr, left_bias, 10.0, distance+10.0);
+	line_to_3(cr, left_bias, 10.0, distance);
+	line_to_3(cr, left_bias, 0.0, distance);
 	cairo_stroke_preserve(cr);
 	wall_fill_color(cr);
 	cairo_fill(cr);
@@ -145,11 +147,11 @@ void left_wall(cairo_t *cr, float distance)
 void left_door(cairo_t *cr, float distance)
 {
 	door_outline_color(cr);
-	move_to_3(cr, 0.0, 0.0, distance);
-	line_to_3(cr, 0.0, door_height, distance);
-	line_to_3(cr, 0.0, door_height, distance+door_width);
-	line_to_3(cr, 0.0, 0.0, distance+door_width);
-	line_to_3(cr, 0.0, 0.0, distance);
+	move_to_3(cr, left_bias, 0.0, distance);
+	line_to_3(cr, left_bias, door_height, distance);
+	line_to_3(cr, left_bias, door_height, distance+door_width);
+	line_to_3(cr, left_bias, 0.0, distance+door_width);
+	line_to_3(cr, left_bias, 0.0, distance);
 	cairo_stroke_preserve(cr);
 	door_fill_color(cr);
 	cairo_fill(cr);
@@ -158,11 +160,11 @@ void left_door(cairo_t *cr, float distance)
 void right_door(cairo_t *cr, float distance)
 {
 	door_outline_color(cr);
-	move_to_3(cr, 10.0, 0.0, distance);
-	line_to_3(cr, 10.0, door_height, distance);
-	line_to_3(cr, 10.0, door_height, distance+door_width);
-	line_to_3(cr, 10.0, 0.0, distance+door_width);
-	line_to_3(cr, 10.0, 0.0, distance);
+	move_to_3(cr, left_bias + 10.0, 0.0, distance);
+	line_to_3(cr, left_bias + 10.0, door_height, distance);
+	line_to_3(cr, left_bias + 10.0, door_height, distance+door_width);
+	line_to_3(cr, left_bias + 10.0, 0.0, distance+door_width);
+	line_to_3(cr, left_bias + 10.0, 0.0, distance);
 	cairo_stroke_preserve(cr);
 	door_fill_color(cr);
 	cairo_fill(cr);
@@ -173,11 +175,11 @@ void door(cairo_t *cr, float distance)
 	float door_start = (10.0 - door_width) / 2;
 	
 	door_outline_color(cr);
-	move_to_3(cr, door_start, 0.0, distance);
-	line_to_3(cr, door_start, door_height, distance);
-	line_to_3(cr, door_start+door_width, door_height, distance);
-	line_to_3(cr, door_start+door_width, 0.0, distance);
-	line_to_3(cr, door_start, 0.0, distance);
+	move_to_3(cr, left_bias + door_start, 0.0, distance);
+	line_to_3(cr, left_bias + door_start, door_height, distance);
+	line_to_3(cr, left_bias + door_start+door_width, door_height, distance);
+	line_to_3(cr, left_bias + door_start+door_width, 0.0, distance);
+	line_to_3(cr, left_bias + door_start, 0.0, distance);
 	cairo_stroke_preserve(cr);
 	door_fill_color(cr);
 	cairo_fill(cr);
@@ -189,15 +191,15 @@ void open_door(cairo_t *cr, float distance)
 	float door_end   = door_width + door_start;
 
 	wall_outline_color(cr);
-	move_to_3(cr, 0.0, 0.0, distance);
-	line_to_3(cr, door_start, 0.0, distance);
-	line_to_3(cr, door_start, door_height, distance);
-	line_to_3(cr, door_end, door_height, distance);
-	line_to_3(cr, door_end, 0.0, distance);
-	line_to_3(cr, 10.0, 0.0, distance);
-	line_to_3(cr, 10.0, 10.0, distance);
-	line_to_3(cr, 0.0, 10.0, distance);
-	line_to_3(cr, 0.0, 0.0, distance);
+	move_to_3(cr, left_bias, 0.0, distance);
+	line_to_3(cr, left_bias + door_start, 0.0, distance);
+	line_to_3(cr, left_bias + door_start, door_height, distance);
+	line_to_3(cr, left_bias + door_end, door_height, distance);
+	line_to_3(cr, left_bias + door_end, 0.0, distance);
+	line_to_3(cr, left_bias + 10.0, 0.0, distance);
+	line_to_3(cr, left_bias + 10.0, 10.0, distance);
+	line_to_3(cr, left_bias, 10.0, distance);
+	line_to_3(cr, left_bias, 0.0, distance);
 	cairo_stroke_preserve(cr);
 	wall_fill_color(cr);
 	cairo_fill(cr);
@@ -206,7 +208,7 @@ void open_door(cairo_t *cr, float distance)
 void open_door_side(cairo_t *cr)
 {
 	float wall_depth = 2.0;
-	float wall_start = (10.0-wall_depth)/2.0;
+	float wall_start = (10.0-wall_depth)/2.0 + left_bias;
 	float jamb_dist = door_width / 2.0;
 
 	door_outline_color(cr);
@@ -232,11 +234,11 @@ void open_door_side(cairo_t *cr)
 void right_wall(cairo_t *cr, float distance)
 {
 	wall_outline_color(cr);
-	move_to_3(cr, 10.0, 0.0, distance);
-	line_to_3(cr, 10.0, 0.0, distance+10.0);
-	line_to_3(cr, 10.0, 10.0, distance+10.0);
-	line_to_3(cr, 10.0, 10.0, distance);
-	line_to_3(cr, 10.0, 0.0, distance);
+	move_to_3(cr, left_bias + 10.0, 0.0, distance);
+	line_to_3(cr, left_bias + 10.0, 0.0, distance+10.0);
+	line_to_3(cr, left_bias + 10.0, 10.0, distance+10.0);
+	line_to_3(cr, left_bias + 10.0, 10.0, distance);
+	line_to_3(cr, left_bias + 10.0, 0.0, distance);
 	cairo_stroke_preserve(cr);
 	wall_fill_color(cr);
 	cairo_fill(cr);
@@ -266,16 +268,47 @@ void paint(void)
 		cairo_move_to(cr, 50.0, 50.0);
 		cairo_line_to(cr, 100.0, 100.0);
 */
+// flat 3
+		left_bias = -30.0;
+		wall(cr, 30.0);
+		left_bias = -20.0;
+		wall(cr, 30.0);
+		left_bias = 10.0;
+		wall(cr, 30.0);
+
+// line 2
+		left_bias = -10.0;
+		left_wall(cr, 20.0);
+		left_bias = 0.0;
+		left_wall(cr, 20.0);
+		left_bias = 10.0;
+		right_wall(cr, 20.0);
+
+// flat 2
+		left_bias = -10.0;
 		wall(cr, 20.0);
+		door(cr, 20.0);
+		left_bias = 10.0;
+		wall(cr, 20.0);
+
+// line 1
+		left_bias = 0.0;
+		right_wall(cr, 10.0);
+
+// flat 1
+		left_bias = 10.0;
+		wall(cr, 10.0);
+
+/*
+		door(cr, 20.0);
 		left_wall(cr, 10.0);
 		right_wall(cr, 10.0);
 		left_wall(cr, 0.0);
 		right_wall(cr, 0.0);
 		left_door(cr, 2.5);
 		right_door(cr, 12.5);
-		door(cr, 20.0);
-		open_door(cr, 0.0);
-
+	//	open_door(cr, 0.0);
+*/
 		cairo_destroy(cr);
 		// should I do this?
 		cairo_surface_destroy(cairo_surface);
