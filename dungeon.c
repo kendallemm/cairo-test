@@ -22,12 +22,37 @@
 #include <SDL.h>
 #include <cairo.h>
 
+enum {
+	DIRECTION_NORTH = 0,
+	DIRECTION_EAST,
+	DIRECTION_SOUTH,
+	DIRECTION_WEST
+};
+
 const int height = 640;
 const int width  = 640;
 const int door_height = 7.0;
 const int door_width  = 5.0;
+#define MAP_H ((10))
+#define MAP_W ((10))
 
 float left_bias = 0.0;
+
+int player_x = 1, player_y = 1;
+int player_facing = DIRECTION_EAST;
+
+static char dungeon_map [MAP_H*MAP_W+1] = 
+	"XXXXXXXXXX"
+   "X....XXXXX"
+   "XXXX.XXXXX"
+   "XXXX.XXXXX"
+   "XXXX.....X"
+   "X....XXXXX"
+   "X.XX.XXXXX"
+   "X.XX.XXXXX"
+   "X........X"
+   "XXXXXXXXXX"
+;
 
 SDL_Window   *window;
 SDL_Renderer *renderer;
@@ -94,6 +119,7 @@ void line_to_3(cairo_t *cr, float x, float y, float z)
 
 void wall(cairo_t *cr, float distance)
 {
+	printf ("Drawing wall with left bias %f at distance %f\n", left_bias, distance);
 	wall_outline_color(cr);
 	move_to_3(cr, left_bias, 0.0, distance);
 	line_to_3(cr, left_bias + 10.0, 0.0, distance);
@@ -133,6 +159,7 @@ void wall_2(cairo_t *cr, float distance)
 
 void left_wall(cairo_t *cr, float distance)
 {
+	printf ("Drawing left wall with left bias %f at distance %f\n", left_bias, distance);
 	wall_outline_color(cr);
 	move_to_3(cr, left_bias, 0.0, distance);
 	line_to_3(cr, left_bias, 0.0, distance+10.0);
@@ -233,6 +260,7 @@ void open_door_side(cairo_t *cr)
 
 void right_wall(cairo_t *cr, float distance)
 {
+	printf ("Drawing right wall with left bias %f at distance %f\n", left_bias, distance);
 	wall_outline_color(cr);
 	move_to_3(cr, left_bias + 10.0, 0.0, distance);
 	line_to_3(cr, left_bias + 10.0, 0.0, distance+10.0);
@@ -243,6 +271,146 @@ void right_wall(cairo_t *cr, float distance)
 	wall_fill_color(cr);
 	cairo_fill(cr);
 }
+
+void iterate_east (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, int, float))
+{
+	float dist = (steps - 1) * 10.0;
+	int x = player_x + steps;
+
+	if (x >= MAP_W)
+		return;
+
+	for (int y = player_y - steps; y < player_y; y++)
+	{
+		if (y >= 0 && y < MAP_H) {
+			printf ("L-R Drawing (%i, %i) @ %f\n", x, y, dist);
+			drawfn(cr, y-player_y, x, y, dist);
+		}
+		left_bias += 10.0;
+	}
+	left_bias = steps * 10.0;
+	for (int y = player_y + steps; y >= player_y;  y--)
+	{
+		if (y >= 0 && y < MAP_H) {
+			printf ("R-L Drawing (%i, %i) @ %f\n", x, y, dist);
+			drawfn(cr, y-player_y, x, y, dist);
+		}
+		left_bias -= 10.0;
+	}
+}
+
+void iterate_north (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, int, float))
+{
+	int y = player_y - steps;
+
+	if (y < 0)
+		return;
+
+	for (int x = player_x - steps; x < player_x + steps; x++)
+	{
+		if (x >= 0 && x < MAP_W) {
+			drawfn(cr, x-player_x,x, y, steps * 10.0);
+		}
+		left_bias += 10.0;
+	}
+}
+
+void iterate_west (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, int, float))
+{
+	int x = player_x - steps;
+
+	if (x < 0) return;
+
+	for (int y = player_y + steps - 1; y > player_y - steps; y--)
+	{
+		if (y >= 0 && y < MAP_H) {
+			drawfn(cr, -(y - player_y), x, y, steps * 10.0);
+		}
+		left_bias += 10.0;
+	}
+}
+
+void iterate_south (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, int, float))
+{
+	int y = player_y + steps;
+	if (y >- MAP_H) return;
+	for (int x = player_x + steps - 1; x > player_x - steps; x--)
+	{
+		if (x >= 0 && x < MAP_W) {
+			drawfn(cr, -(x - player_x), x, y, steps * 10.0);
+		}
+		left_bias += 10.0;
+	}
+}
+
+void (*iterator[])(cairo_t *, int, void (*fn)(cairo_t *, int, int, int, float))= {
+	iterate_north,
+	iterate_east,
+	iterate_south,
+	iterate_west
+};
+
+int horizontal()
+{
+	return player_facing == DIRECTION_EAST || player_facing == DIRECTION_WEST;
+}
+
+int vertical()
+{
+	return player_facing == DIRECTION_NORTH || player_facing == DIRECTION_SOUTH;
+}
+
+void draw_flat_back (cairo_t *cr, int hand, int x, int y, float dist)
+{
+	dist += 10.0;
+	switch (dungeon_map[x+y*MAP_W]) {
+		case 'X': wall(cr, dist); break;
+		case '|': wall(cr, dist); if (horizontal()) { door(cr, dist); }; break;
+		case '-': wall(cr, dist); if (vertical()) { door(cr, dist); }; break;
+		case '.': break;
+	}
+}
+
+void draw_flat_front (cairo_t *cr, int hand, int x, int y, float dist)
+{
+	//dist -= 10.0;
+	if (dist < 0.0) return;
+
+	switch (dungeon_map[y*MAP_W+x]) {
+		case 'X': wall(cr, dist); break;
+		case '|': wall(cr, dist); if (horizontal()) { door(cr, dist); }; break;
+		case '-': wall(cr, dist); if (vertical()) { door(cr, dist); }; break;
+		case '.': break;
+	}
+}
+
+void both_walls(cairo_t *cr, float dist)
+{
+	left_wall(cr, dist);
+	right_wall(cr, dist);
+}
+
+void draw_core (cairo_t *cr, int hand, int x, int y, float dist)
+{
+	void (*wallfn)(cairo_t*,float) = right_wall;
+	void (*doorfn)(cairo_t*,float) = left_door;
+	if (hand > 0) wallfn = left_wall;
+	if (!hand) wallfn = both_walls;
+	if (hand > 0) doorfn = right_door;
+
+	switch (dungeon_map[y*MAP_W+x]) {
+		case 'X': wallfn(cr, dist); break;
+		case '|': wallfn(cr, dist); if (vertical ()) { doorfn(cr, dist); }; break;
+		case '-': wallfn(cr, dist); if (horizontal ()) { doorfn(cr, dist); }; break;
+		case '.': break;
+	}
+}
+
+/*
+void a ()
+{
+}
+*/
 
 void paint(void)
 {
@@ -256,18 +424,31 @@ void paint(void)
 				pixels, CAIRO_FORMAT_ARGB32, width, height, pitch);
 		cairo_t *cr = cairo_create(cairo_surface);
 
+		// clear to black
+		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		cairo_paint(cr);
+
 		cairo_set_source_rgb(cr, 255, 0, 0);
 		cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
 			CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size(cr, 40.0);
 		cairo_move_to(cr, 10.0, 50.0);
 		cairo_show_text(cr, "Hello, world!");
-
 		cairo_set_source_rgb(cr, 255, 255, 255);
+		for (int steps = 5; steps >= 0; steps--) {
+			left_bias = steps * -10.0;
+			iterator[player_facing] (cr, steps, draw_flat_back);
+			left_bias = steps * -10.0;
+			iterator[player_facing] (cr, steps, draw_core);
+			left_bias = steps * -10.0;
+			iterator[player_facing] (cr, steps, draw_flat_front);
+		}
+	
 /*
 		cairo_move_to(cr, 50.0, 50.0);
 		cairo_line_to(cr, 100.0, 100.0);
 */
+/*
 // flat 3
 		left_bias = -30.0;
 		wall(cr, 30.0);
@@ -298,7 +479,7 @@ void paint(void)
 // flat 1
 		left_bias = 10.0;
 		wall(cr, 10.0);
-
+*/
 /*
 		door(cr, 20.0);
 		left_wall(cr, 10.0);
@@ -314,6 +495,7 @@ void paint(void)
 		cairo_surface_destroy(cairo_surface);
 	}
 	SDL_UnlockTexture(texture);
+	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);
 }
@@ -331,11 +513,104 @@ void nap (void)
 	SDL_Delay(5000);
 }
 
+int dirty_flag = 0;
+
+void mark_dirty()
+{
+	dirty_flag = 1;
+}
+
+void mark_clean()
+{
+	dirty_flag = 0;
+}
+
+int is_dirty()
+{
+	return dirty_flag;
+}
+
+void move_forward(void)
+{
+	int newx = player_x, newy = player_y;
+	switch (player_facing) {
+		case DIRECTION_EAST: newx += 1; break;
+		case DIRECTION_WEST: newx -= 1; break;
+		case DIRECTION_NORTH: newy -= 1; break;
+		case DIRECTION_SOUTH: newy += 1; break;
+	}
+	if (dungeon_map[newx+newy*MAP_W] != 'X') {
+		player_x = newx;
+		player_y = newy;
+		mark_dirty();
+	}
+}
+
+void move_backward(void)
+{
+	int newx = player_x, newy = player_y;
+	switch (player_facing) {
+		case DIRECTION_EAST: newx -= 1; break;
+		case DIRECTION_WEST: newx += 1; break;
+		case DIRECTION_NORTH: newy += 1; break;
+		case DIRECTION_SOUTH: newy -= 1; break;
+	}
+	if (dungeon_map[newx+newy*MAP_W] != 'X') {
+		player_x = newx;
+		player_y = newy;
+		mark_dirty();
+	}
+}
+
+void turn_right(void)
+{
+	player_facing += 1;
+	if (player_facing > DIRECTION_WEST)
+		player_facing = DIRECTION_NORTH;
+	mark_dirty();
+}
+
+void turn_left(void)
+{
+	player_facing -= 1;
+	if (player_facing < DIRECTION_NORTH)
+		player_facing = DIRECTION_WEST;
+	mark_dirty();
+}
+
+int quitflag = 0;
+
+void handle_input (void)
+{
+	SDL_Event ev;
+
+	while (SDL_PollEvent(&ev)) {
+		switch (ev.type) {
+			case SDL_KEYDOWN: {
+				switch (ev.key.keysym.sym) {
+					case SDLK_UP: move_forward(); break;
+					case SDLK_DOWN: move_backward(); break;
+					case SDLK_LEFT: turn_left(); break;
+					case SDLK_RIGHT: turn_right(); break;
+					case SDLK_q: quitflag = 1;
+				}
+			}
+		}
+	}
+}
+
 int main (int argc, char *argv[])
 {
 	window_setup();
-	paint();
-	nap();
+	mark_dirty();
+	while (!quitflag) {
+		if (is_dirty()) {
+			paint();
+			mark_clean();
+		}
+		handle_input();
+		SDL_Delay(1);
+	}
 	window_teardown();
 	return 0;
 }
