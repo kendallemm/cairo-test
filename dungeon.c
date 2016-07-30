@@ -277,7 +277,20 @@ void right_wall(cairo_t *cr, float distance)
 	cairo_fill(cr);
 }
 
-void iterate_east (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, int, float))
+typedef void (*drawing_fn_t)(cairo_t *, int, int, int, float);
+
+void draw_square (cairo_t *cr, int approach, int x, int y, float dist, drawing_fn_t drawfn)
+{
+	if (y >= 0 && y < MAP_H)
+	if (x >= 0 && x < MAP_W)
+	{
+		drawfn(cr, approach, x, y, dist);
+	}
+	if (approach < 0) left_bias += 10.0;
+	if (approach > 0) left_bias -= 10.0;
+}
+
+void iterate_east (cairo_t *cr, int steps, drawing_fn_t drawfn)
 {
 	float dist = steps * 10.0;
 	int x = player_x + steps;
@@ -288,73 +301,73 @@ void iterate_east (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, i
 	left_bias -=10.0;
 	for (int y = player_y - steps-1; y < player_y; y++)
 	{
-		if (y >= 0 && y < MAP_H) {
-			printf ("L-R Drawing (%i, %i) @ %f\n", x, y, dist);
-			drawfn(cr, y-player_y, x, y, dist);
-		}
-		left_bias += 10.0;
+		draw_square (cr, y-player_y, x, y, dist, drawfn);
 	}
 	left_bias = steps * 10.0;
 	left_bias +=10.0;
 	for (int y = player_y + steps+1; y >= player_y;  y--)
 	{
-		if (y >= 0 && y < MAP_H) {
-			printf ("R-L Drawing (%i, %i) @ %f\n", x, y, dist);
-			drawfn(cr, y-player_y, x, y, dist);
-		}
-		left_bias -= 10.0;
+		draw_square (cr, y-player_y, x, y, dist, drawfn);
 	}
 }
 
-void iterate_north (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, int, float))
+void iterate_north (cairo_t *cr, int steps, drawing_fn_t drawfn)
 {
 	int y = player_y - steps;
+	float dist = steps * 10.0;
 
 	if (y < 0)
 		return;
 
-	for (int x = player_x - steps; x < player_x + steps; x++)
+	left_bias -= 10.0;
+	for (int x = player_x - steps -1; x < player_x; x++)
 	{
-		if (x >= 0 && x < MAP_W) {
-			drawfn(cr, x-player_x,x, y, steps * 10.0);
-		}
-		left_bias += 10.0;
+		draw_square (cr, x-player_x, x, y, dist, drawfn);
+	}
+	left_bias = steps * 10.0;
+	left_bias += 10.0;
+	for (int x = player_x + steps +1; x >= player_x; x--)
+	{
+		draw_square (cr, x-player_x, x, y, dist, drawfn);
 	}
 }
 
-void iterate_west (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, int, float))
+void iterate_west (cairo_t *cr, int steps, drawing_fn_t drawfn)
 {
 	int x = player_x - steps;
+	float dist = steps * 10.0;
 
 	if (x < 0) return;
 
-	for (int y = player_y + steps - 1; y > player_y; y--)
+	left_bias -=10;
+	for (int y = player_y + steps+ 1; y > player_y; y--)
 	{
-		if (y >= 0 && y < MAP_H) {
-			drawfn(cr, -(y - player_y), x, y, steps * 10.0);
-		}
-		left_bias += 10.0;
+		draw_square (cr, player_y-y, x, y, dist, drawfn);
 	}
 	left_bias = steps * 10.0;
-	for (int y = player_y - steps; y <= player_y; y++)
+	left_bias +=10;
+	for (int y = player_y - steps -1; y <= player_y; y++)
 	{
-		if (y >= 0 && y < MAP_H) {
-			drawfn(cr, -(y - player_y), x, y, steps * 10.0);
-		}
-		left_bias -= 10.0;
+		draw_square (cr, player_y-y, x, y, dist, drawfn);
 	}
 }
 
-void iterate_south (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, int, float))
+void iterate_south (cairo_t *cr, int steps, drawing_fn_t drawfn)
 {
 	int y = player_y + steps;
-	if (y >- MAP_H) return;
-	for (int x = player_x + steps - 1; x > player_x - steps; x--)
+	float dist = steps * 10.0;
+	if (y > MAP_H) return;
+
+	left_bias -= 10.0;
+	for (int x = player_x + steps + 1; x > player_x; x--)
 	{
-		if (x >= 0 && x < MAP_W) {
-			drawfn(cr, -(x - player_x), x, y, steps * 10.0);
-		}
-		left_bias += 10.0;
+		draw_square (cr, player_x-x, x, y, dist, drawfn);
+	}
+	left_bias = 10.0*steps;
+	left_bias += 10.0;
+	for (int x = player_x - steps - 1; x <= player_x; x++)
+	{
+		draw_square (cr, player_x-x, x, y, dist, drawfn);
 	}
 }
 
