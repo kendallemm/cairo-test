@@ -46,10 +46,10 @@ static char dungeon_map [MAP_H*MAP_W+1] =
    "X....XXXXX"
    "XXXX.XXXXX"
    "XXXX.XXXXX"
-   "XXXX.....X"
+   "XXXX.|...X"
    "X....XXXXX"
    "X.XX.XXXXX"
-   "X.XX.XXXXX"
+   "X.XX-XXXXX"
    "X........X"
    "XXXXXXXXXX"
 ;
@@ -87,7 +87,11 @@ void wall_outline_color(cairo_t *cr)
 
 void wall_fill_color(cairo_t *cr)
 {
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	static float r = 0.0, g = 0.0, b = 0.0;
+	
+	cairo_set_source_rgb(cr, r, g, b);
+	r = (1.0+r/2.0);
+	b += 1.0/20.0;
 }
 
 void eye_3_to_2(float x, float y, float z, float *out_x, float *out_y)
@@ -217,6 +221,7 @@ void open_door(cairo_t *cr, float distance)
 	float door_start = (10.0 - door_width) / 2;
 	float door_end   = door_width + door_start;
 
+	printf("Drawing open door with left bias %f at distance %f\n", left_bias, distance);
 	wall_outline_color(cr);
 	move_to_3(cr, left_bias, 0.0, distance);
 	line_to_3(cr, left_bias + door_start, 0.0, distance);
@@ -274,13 +279,14 @@ void right_wall(cairo_t *cr, float distance)
 
 void iterate_east (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, int, float))
 {
-	float dist = (steps - 1) * 10.0;
+	float dist = steps * 10.0;
 	int x = player_x + steps;
 
 	if (x >= MAP_W)
 		return;
 
-	for (int y = player_y - steps; y < player_y; y++)
+	left_bias -=10.0;
+	for (int y = player_y - steps-1; y < player_y; y++)
 	{
 		if (y >= 0 && y < MAP_H) {
 			printf ("L-R Drawing (%i, %i) @ %f\n", x, y, dist);
@@ -289,7 +295,8 @@ void iterate_east (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, i
 		left_bias += 10.0;
 	}
 	left_bias = steps * 10.0;
-	for (int y = player_y + steps; y >= player_y;  y--)
+	left_bias +=10.0;
+	for (int y = player_y + steps+1; y >= player_y;  y--)
 	{
 		if (y >= 0 && y < MAP_H) {
 			printf ("R-L Drawing (%i, %i) @ %f\n", x, y, dist);
@@ -321,12 +328,20 @@ void iterate_west (cairo_t *cr, int steps, void (*drawfn)(cairo_t *, int, int, i
 
 	if (x < 0) return;
 
-	for (int y = player_y + steps - 1; y > player_y - steps; y--)
+	for (int y = player_y + steps - 1; y > player_y; y--)
 	{
 		if (y >= 0 && y < MAP_H) {
 			drawfn(cr, -(y - player_y), x, y, steps * 10.0);
 		}
 		left_bias += 10.0;
+	}
+	left_bias = steps * 10.0;
+	for (int y = player_y - steps; y <= player_y; y++)
+	{
+		if (y >= 0 && y < MAP_H) {
+			drawfn(cr, -(y - player_y), x, y, steps * 10.0);
+		}
+		left_bias -= 10.0;
 	}
 }
 
@@ -360,28 +375,37 @@ int vertical()
 	return player_facing == DIRECTION_NORTH || player_facing == DIRECTION_SOUTH;
 }
 
+void do_door(cairo_t *cr, float dist)
+{
+	if (dist == 0.0) {
+		open_door(cr, dist);
+	} else {
+		wall(cr, dist);
+		door(cr, dist);
+	}
+}
+
 void draw_flat_back (cairo_t *cr, int hand, int x, int y, float dist)
 {
 	dist += 10.0;
 	switch (dungeon_map[x+y*MAP_W]) {
 		case 'X': wall(cr, dist); break;
-		case '|': wall(cr, dist); if (horizontal()) { door(cr, dist); }; break;
-		case '-': wall(cr, dist); if (vertical()) { door(cr, dist); }; break;
+		case '|': if (horizontal()) { do_door(cr, dist); } else { wall(cr,dist); }; break;
+		case '-': if (vertical()) { do_door(cr, dist); } else { wall(cr,dist); };  break;
 		case '.': break;
 	}
 }
 
 void draw_flat_front (cairo_t *cr, int hand, int x, int y, float dist)
 {
-	//dist -= 10.0;
 	if (dist < 0.0) return;
-
 	switch (dungeon_map[y*MAP_W+x]) {
-		case 'X': wall(cr, dist); break;
-		case '|': wall(cr, dist); if (horizontal()) { door(cr, dist); }; break;
-		case '-': wall(cr, dist); if (vertical()) { door(cr, dist); }; break;
-		case '.': break;
+		case 'X': break;
+		case '|': if (horizontal()) { do_door(cr, dist); return; } break;
+		case '-': if (vertical()) { do_door(cr, dist); return; }; break;
+		case '.': return;
 	}
+	wall(cr, dist); 
 }
 
 void both_walls(cairo_t *cr, float dist)
@@ -435,9 +459,10 @@ void paint(void)
 		cairo_move_to(cr, 10.0, 50.0);
 		cairo_show_text(cr, "Hello, world!");
 		cairo_set_source_rgb(cr, 255, 255, 255);
-		for (int steps = 5; steps >= 0; steps--) {
-			left_bias = steps * -10.0;
-			iterator[player_facing] (cr, steps, draw_flat_back);
+		for (int steps = 5; steps >= -2; steps--) {
+			printf ("Step: %i\n", steps);
+//			left_bias = steps * -10.0;
+//			iterator[player_facing] (cr, steps, draw_flat_back);
 			left_bias = steps * -10.0;
 			iterator[player_facing] (cr, steps, draw_core);
 			left_bias = steps * -10.0;
