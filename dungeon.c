@@ -177,6 +177,7 @@ void left_wall(cairo_t *cr, float distance)
 
 void left_door(cairo_t *cr, float distance)
 {
+	distance += (10.0 - door_width)/2.0;
 	door_outline_color(cr);
 	move_to_3(cr, left_bias, 0.0, distance);
 	line_to_3(cr, left_bias, door_height, distance);
@@ -190,6 +191,7 @@ void left_door(cairo_t *cr, float distance)
 
 void right_door(cairo_t *cr, float distance)
 {
+	distance += (10.0 - door_width)/2.0;
 	door_outline_color(cr);
 	move_to_3(cr, left_bias + 10.0, 0.0, distance);
 	line_to_3(cr, left_bias + 10.0, door_height, distance);
@@ -427,13 +429,20 @@ void both_walls(cairo_t *cr, float dist)
 	right_wall(cr, dist);
 }
 
+void both_doors(cairo_t *cr, float dist)
+{
+	left_door(cr, dist);
+	right_door(cr, dist);
+}
+
 void draw_core (cairo_t *cr, int hand, int x, int y, float dist)
 {
 	void (*wallfn)(cairo_t*,float) = right_wall;
-	void (*doorfn)(cairo_t*,float) = left_door;
+	void (*doorfn)(cairo_t*,float) = right_door;
 	if (hand > 0) wallfn = left_wall;
 	if (!hand) wallfn = both_walls;
-	if (hand > 0) doorfn = right_door;
+	if (!hand) doorfn = both_doors;
+	if (hand > 0) doorfn = left_door;
 
 	switch (dungeon_map[y*MAP_W+x]) {
 		case 'X': wallfn(cr, dist); break;
