@@ -671,6 +671,9 @@ void release_map()
 
 int main (int argc, char *argv[])
 {
+	if (argc > 1) {
+		printf ("All arguments to %s ignored.\n", argv[0]);
+	}
 	window_setup();
 	load_map();
 	mark_dirty();

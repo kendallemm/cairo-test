@@ -87,6 +87,9 @@ void nap (void)
 
 int main (int argc, char *argv[])
 {
+	if (argc > 1) {
+		printf ("You don't need to run %s with any arguments!\n", argv[0]);
+	}
 	window_setup();
 	paint();
 	nap();
