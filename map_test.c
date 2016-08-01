@@ -85,8 +85,12 @@ int main (int argc, char *argv[])
 		test_set_get_cycle,
 	};
 
+	if (argc > 1) {
+		printf ("Ignoring arguments to %s\n", argv[0]);
+	}
+
 //	printf ("Woah: %i -- %i\n", sizeof(functions), sizeof(test_fn));
-	for (int i = 0; i < sizeof(functions)/sizeof(test_fn); i++)
+	for (size_t i = 0; i < sizeof(functions)/sizeof(test_fn); i++)
 	{
 		(functions[i]())?passes++:fails++;
 	}

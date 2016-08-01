@@ -21,11 +21,12 @@
 
 struct map;
 
-int  map_width(struct map *map);
-int  map_height(struct map *map);
+int map_width(struct map *map);
+int map_height(struct map *map);
 char map_tile(struct map *map, int x, int y);
 void map_set_tile(struct map *map, int x, int y, char tile);
-struct map *map_new(int width, int height);
+/*@null@*/
+struct map *map_new(size_t width, size_t height);
 void map_delete(struct map *map);
 
 #endif

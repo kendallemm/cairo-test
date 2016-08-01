@@ -22,12 +22,13 @@
 
 struct map
 {
-	int width;
-	int height;
+	size_t width;
+	size_t height;
 	char *data;
 };
 
-struct map *map_new(int width, int height)
+/*@null@*/
+struct map *map_new(size_t width, size_t height)
 {
 	struct map *map = (struct map *)malloc(sizeof(struct map));
 	if (map)
@@ -42,18 +43,19 @@ struct map *map_new(int width, int height)
 void map_delete (struct map *map)
 {
 	if (map) {
+		if (map->data) free(map->data);
 		free (map);
 	}
 }
 
 int map_width (struct map *map)
 {
-	return map->width;
+	return (int)map->width;
 }
 
 int map_height (struct map *map)
 {
-	return map->height;
+	return (int)map->height;
 }
 
 char map_tile (struct map *map, int x, int y)
