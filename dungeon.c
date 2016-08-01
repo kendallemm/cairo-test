@@ -22,6 +22,8 @@
 #include <SDL.h>
 #include <cairo.h>
 
+#include "map.h"
+
 enum {
 	DIRECTION_NORTH = 0,
 	DIRECTION_EAST,
@@ -53,6 +55,8 @@ static char dungeon_map [MAP_H*MAP_W+1] =
    "X........X"
    "XXXXXXXXXX"
 ;
+
+struct map * current_map;
 
 SDL_Window   *window;
 SDL_Renderer *renderer;
@@ -283,8 +287,8 @@ typedef void (*drawing_fn_t)(cairo_t *, int, int, int, float);
 
 void draw_square (cairo_t *cr, int approach, int x, int y, float dist, drawing_fn_t drawfn)
 {
-	if (y >= 0 && y < MAP_H)
-	if (x >= 0 && x < MAP_W)
+	if (y >= 0 && y < map_height(current_map))
+	if (x >= 0 && x < map_width(current_map))
 	{
 		drawfn(cr, approach, x, y, dist);
 	}
@@ -297,7 +301,7 @@ void iterate_east (cairo_t *cr, int steps, drawing_fn_t drawfn)
 	float dist = steps * 10.0;
 	int x = player_x + steps;
 
-	if (x >= MAP_W)
+	if (x >= map_width(current_map))
 		return;
 
 	left_bias -=10.0;
@@ -358,7 +362,7 @@ void iterate_south (cairo_t *cr, int steps, drawing_fn_t drawfn)
 {
 	int y = player_y + steps;
 	float dist = steps * 10.0;
-	if (y > MAP_H) return;
+	if (y > map_height(current_map)) return;
 
 	left_bias -= 10.0;
 	for (int x = player_x + steps + 1; x > player_x; x--)
@@ -402,8 +406,9 @@ void do_door(cairo_t *cr, float dist)
 
 void draw_flat_back (cairo_t *cr, int hand, int x, int y, float dist)
 {
+	hand = hand;
 	dist += 10.0;
-	switch (dungeon_map[x+y*MAP_W]) {
+	switch (map_tile(current_map, x, y)) {
 		case 'X': wall(cr, dist); break;
 		case '|': if (horizontal()) { do_door(cr, dist); } else { wall(cr,dist); }; break;
 		case '-': if (vertical()) { do_door(cr, dist); } else { wall(cr,dist); };  break;
@@ -413,8 +418,9 @@ void draw_flat_back (cairo_t *cr, int hand, int x, int y, float dist)
 
 void draw_flat_front (cairo_t *cr, int hand, int x, int y, float dist)
 {
+	hand = hand;
 	if (dist < 0.0) return;
-	switch (dungeon_map[y*MAP_W+x]) {
+	switch (map_tile(current_map, x, y)) {
 		case 'X': break;
 		case '|': if (horizontal()) { do_door(cr, dist); return; } break;
 		case '-': if (vertical()) { do_door(cr, dist); return; }; break;
@@ -444,7 +450,7 @@ void draw_core (cairo_t *cr, int hand, int x, int y, float dist)
 	if (!hand) doorfn = both_doors;
 	if (hand > 0) doorfn = left_door;
 
-	switch (dungeon_map[y*MAP_W+x]) {
+	switch (map_tile(current_map, x, y)) {
 		case 'X': wallfn(cr, dist); break;
 		case '|': wallfn(cr, dist); if (vertical ()) { doorfn(cr, dist); }; break;
 		case '-': wallfn(cr, dist); if (horizontal ()) { doorfn(cr, dist); }; break;
@@ -586,7 +592,7 @@ void move_forward(void)
 		case DIRECTION_NORTH: newy -= 1; break;
 		case DIRECTION_SOUTH: newy += 1; break;
 	}
-	if (dungeon_map[newx+newy*MAP_W] != 'X') {
+	if (map_tile(current_map, newx, newy) != 'X') {
 		player_x = newx;
 		player_y = newy;
 		mark_dirty();
@@ -602,7 +608,7 @@ void move_backward(void)
 		case DIRECTION_NORTH: newy += 1; break;
 		case DIRECTION_SOUTH: newy -= 1; break;
 	}
-	if (dungeon_map[newx+newy*MAP_W] != 'X') {
+	if (map_tile(current_map, newx, newy) != 'X') {
 		player_x = newx;
 		player_y = newy;
 		mark_dirty();
@@ -646,9 +652,27 @@ void handle_input (void)
 	}
 }
 
+void load_map ()
+{
+	int x, y;
+	current_map = map_new(MAP_W, MAP_H);
+	for (x = 0; x < map_width(current_map); x++)
+	for (y = 0; y < map_height(current_map); y++)
+	{
+		map_set_tile(current_map, x, y, dungeon_map[x+y*MAP_W]);
+	}
+}
+
+void release_map()
+{
+	map_delete(current_map);
+	current_map = NULL;
+}
+
 int main (int argc, char *argv[])
 {
 	window_setup();
+	load_map();
 	mark_dirty();
 	while (!quitflag) {
 		if (is_dirty()) {
@@ -658,6 +682,7 @@ int main (int argc, char *argv[])
 		handle_input();
 		SDL_Delay(1);
 	}
+	release_map();
 	window_teardown();
 	return 0;
 }
