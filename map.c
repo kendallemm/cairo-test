@@ -35,6 +35,7 @@ struct map *map_new(size_t width, size_t height)
 	{
 		map->width = width;
 		map->height = height;
+		map->data = (char *)malloc(width * height * sizeof(char));
 	}
 
 	return map;
