@@ -19,6 +19,7 @@
 #include <stdio.h>
 
 #include "map.h"
+#include "map_loader.h"
 
 struct map *demo_map_setup ()
 {
@@ -75,6 +76,27 @@ TEST(test_set_get_cycle)
 	return res;
 }
 
+TEST(test_load_map)
+{
+	struct map *map = load_map_from_path ("map");
+	int res = (map != NULL);
+	map_delete(map);
+	return res;
+}
+
+TEST(test_loaded_map_correct_coordinates)
+{
+	struct map *map = load_map_from_path ("map");
+	int res = (map != NULL);
+
+	if (res) {
+		res = (map_tile(map, 1, 1) == '.');
+	}
+
+	map_delete(map);
+	return res;
+}
+
 int main (int argc, char *argv[])
 {
 	int passes = 0;
@@ -83,6 +105,8 @@ int main (int argc, char *argv[])
 	test_fn functions [] = {
 		test_coordinates,
 		test_set_get_cycle,
+		test_load_map,
+		test_loaded_map_correct_coordinates
 	};
 
 	if (argc > 1) {

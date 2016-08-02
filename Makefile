@@ -13,7 +13,7 @@ hello: hello.o
 
 dungeon: dungeon.o
 
-map_test: map_test.o map.o
+map_test: map_test.o map.o map_loader.o
 
 clean:
 	rm -f $(OBJECTS) $(BINARIES)
