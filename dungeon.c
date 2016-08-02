@@ -200,6 +200,7 @@ void draw_core (cairo_t *cr, int hand, int x, int y, float dist)
 	if (hand > 0) doorfn = left_door;
 
 	switch (map_tile(current_map, x, y)) {
+		case 'T': chest(cr, dist); break;
 		case 'X': wallfn(cr, dist); break;
 		case '|': wallfn(cr, dist); if (vertical ()) { doorfn(cr, dist); }; break;
 		case '-': wallfn(cr, dist); if (horizontal ()) { doorfn(cr, dist); }; break;

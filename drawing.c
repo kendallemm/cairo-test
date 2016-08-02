@@ -24,12 +24,28 @@
 
 #include "drawing.h"
 
+#define INCHES(x) ((x)/12.0)
+
 static const int height = 640;
 static const int width  = 640;
 static const int door_height = 7.0;
 static const int door_width  = 5.0;
 
+static const int chest_height = INCHES(18.0);
+static const int chest_width  = INCHES(22.0);
+static const int chest_depth  = INCHES(14.0);
+
 static float left_bias = 0.0;
+
+void chest_outline_color(cairo_t *cr)
+{
+	cairo_set_source_rgb(cr, 102.0/255.0, 81.0/255.0, 70.0/255.0);
+}
+
+void chest_fill_color(cairo_t *cr)
+{
+	cairo_set_source_rgb(cr, 141.0/255.0, 101.0/255.0, 56.0/255.0);
+}
 
 void door_outline_color(cairo_t *cr)
 {
@@ -197,6 +213,84 @@ void open_door_side(cairo_t *cr)
 	line_to_3(cr, wall_start, door_height, jamb_dist);
 	cairo_stroke_preserve(cr);
 	door_fill_color(cr);
+	cairo_fill(cr);
+}
+
+void chest(cairo_t *cr, float distance)
+{
+	float
+		left_x = (10.0 - chest_width) / 2.0,
+		right_x = (10.0 + chest_width) / 2.0,
+		top_y  = (chest_height),
+		bottom_y = 0.0,
+		back_z = distance + (10.0 + chest_depth) / 2.0,
+		front_z = distance + (10.0 - chest_depth) / 2.0
+	;
+
+	// back
+	chest_outline_color(cr);
+	move_to_3(cr, left_x, bottom_y, back_z);
+	line_to_3(cr, left_x, top_y, back_z);
+	line_to_3(cr, right_x, top_y, back_z);
+	line_to_3(cr, right_x, bottom_y, back_z);
+	line_to_3(cr, left_x, bottom_y, back_z);
+	cairo_stroke_preserve(cr);
+	chest_fill_color(cr);
+	cairo_fill(cr);
+
+	// bottom
+	chest_outline_color(cr);
+	move_to_3(cr, left_x, bottom_y, back_z);
+	line_to_3(cr, left_x, bottom_y, front_z);
+	line_to_3(cr, right_x, bottom_y, front_z);
+	line_to_3(cr, right_x, bottom_y, back_z);
+	line_to_3(cr, left_x, bottom_y, back_z);
+	cairo_stroke_preserve(cr);
+	chest_fill_color(cr);
+	cairo_fill(cr);
+
+	// left
+	chest_outline_color(cr);
+	move_to_3(cr, left_x, bottom_y, back_z);
+	line_to_3(cr, left_x, bottom_y, front_z);
+	line_to_3(cr, left_x, top_y, front_z);
+	line_to_3(cr, left_x, top_y, back_z);
+	line_to_3(cr, left_x, bottom_y, back_z);
+	cairo_stroke_preserve(cr);
+	chest_fill_color(cr);
+	cairo_fill(cr);
+
+	// right
+	chest_outline_color(cr);
+	move_to_3(cr, right_x, bottom_y, back_z);
+	line_to_3(cr, right_x, bottom_y, front_z);
+	line_to_3(cr, right_x, top_y, front_z);
+	line_to_3(cr, right_x, top_y, back_z);
+	line_to_3(cr, right_x, bottom_y, back_z);
+	cairo_stroke_preserve(cr);
+	chest_fill_color(cr);
+	cairo_fill(cr);
+
+	// top
+	chest_outline_color(cr);
+	move_to_3(cr, left_x, top_y, back_z);
+	line_to_3(cr, left_x, top_y, front_z);
+	line_to_3(cr, right_x, top_y, front_z);
+	line_to_3(cr, right_x, top_y, back_z);
+	line_to_3(cr, left_x, top_y, back_z);
+	cairo_stroke_preserve(cr);
+	chest_fill_color(cr);
+	cairo_fill(cr);
+
+	// front
+	chest_outline_color(cr);
+	move_to_3(cr, left_x, bottom_y, front_z);
+	line_to_3(cr, left_x, top_y, front_z);
+	line_to_3(cr, right_x, top_y, front_z);
+	line_to_3(cr, right_x, bottom_y, front_z);
+	line_to_3(cr, left_x, bottom_y, front_z);
+	cairo_stroke_preserve(cr);
+	chest_fill_color(cr);
 	cairo_fill(cr);
 }
 
