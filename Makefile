@@ -11,7 +11,7 @@ all: hello dungeon map_test
 
 hello: hello.o
 
-dungeon: dungeon.o
+dungeon: dungeon.o map.o map_loader.o
 
 map_test: map_test.o map.o map_loader.o
 

@@ -23,6 +23,7 @@
 #include <cairo.h>
 
 #include "map.h"
+#include "map_loader.h"
 
 enum {
 	DIRECTION_NORTH = 0,
@@ -42,19 +43,6 @@ float left_bias = 0.0;
 
 int player_x = 1, player_y = 1;
 int player_facing = DIRECTION_EAST;
-
-static char dungeon_map [MAP_H*MAP_W+1] = 
-	"XXXXXXXXXX"
-   "X....XXXXX"
-   "XXXX.XXXXX"
-   "XXXX.XXXXX"
-   "XXXX.|...X"
-   "X....XXXXX"
-   "X.XX.XXXXX"
-   "X.XX-XXXXX"
-   "X........X"
-   "XXXXXXXXXX"
-;
 
 struct map * current_map;
 
@@ -654,12 +642,10 @@ void handle_input (void)
 
 void load_map ()
 {
-	int x, y;
-	current_map = map_new(MAP_W, MAP_H);
-	for (x = 0; x < map_width(current_map); x++)
-	for (y = 0; y < map_height(current_map); y++)
-	{
-		map_set_tile(current_map, x, y, dungeon_map[x+y*MAP_W]);
+	current_map = load_map_from_path("map");
+	if (!current_map) {
+		fprintf(stderr, "Can't open map file: %s\n", "map");
+		exit(1);
 	}
 }
 
