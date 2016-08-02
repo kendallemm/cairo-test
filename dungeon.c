@@ -186,6 +186,7 @@ void draw_flat_front (cairo_t *cr, int hand, int x, int y, float dist)
 		case '|': if (horizontal()) { do_door(cr, dist); return; } break;
 		case '-': if (vertical()) { do_door(cr, dist); return; }; break;
 		case '.': return;
+		default: return;
 	}
 	wall(cr, dist); 
 }
