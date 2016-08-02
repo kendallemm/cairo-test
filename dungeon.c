@@ -22,6 +22,7 @@
 #include <SDL.h>
 #include <cairo.h>
 
+#include "drawing.h"
 #include "map.h"
 #include "map_loader.h"
 
@@ -31,15 +32,6 @@ enum {
 	DIRECTION_SOUTH,
 	DIRECTION_WEST
 };
-
-const int height = 640;
-const int width  = 640;
-const int door_height = 7.0;
-const int door_width  = 5.0;
-#define MAP_H ((10))
-#define MAP_W ((10))
-
-float left_bias = 0.0;
 
 int player_x = 1, player_y = 1;
 int player_facing = DIRECTION_EAST;
@@ -54,221 +46,12 @@ void         *pixels;
 void window_setup (void)
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
-	window   = SDL_CreateWindow("Cairo!", 20, 20, width, height, 0);
+	window   = SDL_CreateWindow("Cairo!", 20, 20, display_width(), display_height(), 0);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	texture  = SDL_CreateTexture(
 		renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
-		width, height
+		display_width(), display_height()
 	);
-}
-
-void door_outline_color(cairo_t *cr)
-{
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-}
-
-void door_fill_color(cairo_t *cr)
-{
-	cairo_set_source_rgb(cr, 0.5, 0.5, 0.0);
-}
-
-void wall_outline_color(cairo_t *cr)
-{
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-}
-
-void wall_fill_color(cairo_t *cr)
-{
-	static float r = 0.0, g = 0.0, b = 0.0;
-	
-	cairo_set_source_rgb(cr, r, g, b);
-	r = (1.0+r/2.0);
-	b += 1.0/20.0;
-}
-
-void eye_3_to_2(float x, float y, float z, float *out_x, float *out_y)
-{
-	float z_coeff  = 0.0;
-	
-	z_coeff = pow(2, 0-(z / 10.0));
-
-	*out_x = (x-5) * z_coeff + 5.0;
-	*out_y = (y-5) * z_coeff + 5.0;
-}
-
-void convert_cairo3(cairo_t *cr, float x, float y, float z, void (*fn)(cairo_t *, double, double))
-{
-	float x2, y2;
-	eye_3_to_2(x, y, z, &x2, &y2);
-	fn(cr, (x2/10.0 * width), (10.0 - y2)/10.0 * height);
-}
-
-void move_to_3(cairo_t *cr, float x, float y, float z)
-{
-	convert_cairo3(cr, x, y, z, cairo_move_to);
-}
-
-void line_to_3(cairo_t *cr, float x, float y, float z)
-{
-	convert_cairo3(cr, x, y, z, cairo_line_to);
-}
-
-void wall(cairo_t *cr, float distance)
-{
-	printf ("Drawing wall with left bias %f at distance %f\n", left_bias, distance);
-	wall_outline_color(cr);
-	move_to_3(cr, left_bias, 0.0, distance);
-	line_to_3(cr, left_bias + 10.0, 0.0, distance);
-	line_to_3(cr, left_bias + 10.0, 10.0, distance);
-	line_to_3(cr, left_bias, 10.0, distance);
-	line_to_3(cr, left_bias, 0.0, distance);
-	cairo_stroke_preserve(cr);
-	wall_fill_color(cr);
-	cairo_fill(cr);
-}
-
-void draw_shape(cairo_t *cr, float(*points)[3], int npoints)
-{
-	float (*point)[3] = points;
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-	move_to_3(cr, *points[0], *points[1], *points[2]);
-	while (npoints--) {
-		line_to_3(cr, *point[0], *point[1], *point[3]);
-	}
-	line_to_3(cr, *points[0], *points[1], *points[2]);
-	cairo_stroke_preserve(cr);
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	cairo_fill(cr);
-}
-
-void wall_2(cairo_t *cr, float distance)
-{
-	float shape[4][3] = {
-		{0.0, 0.0, 0.0},
-		{10.0, 0.0, 0.0},
-		{10.0, 10.0, 0.0},
-		{0.0, 10.0, 0.0},
-	};
-	shape[0][2] = shape[1][2] = shape[2][2] = shape[3][2] = distance;
-	draw_shape(cr, shape, 4);
-}
-
-void left_wall(cairo_t *cr, float distance)
-{
-	printf ("Drawing left wall with left bias %f at distance %f\n", left_bias, distance);
-	wall_outline_color(cr);
-	move_to_3(cr, left_bias, 0.0, distance);
-	line_to_3(cr, left_bias, 0.0, distance+10.0);
-	line_to_3(cr, left_bias, 10.0, distance+10.0);
-	line_to_3(cr, left_bias, 10.0, distance);
-	line_to_3(cr, left_bias, 0.0, distance);
-	cairo_stroke_preserve(cr);
-	wall_fill_color(cr);
-	cairo_fill(cr);
-}
-
-void left_door(cairo_t *cr, float distance)
-{
-	distance += (10.0 - door_width)/2.0;
-	door_outline_color(cr);
-	move_to_3(cr, left_bias, 0.0, distance);
-	line_to_3(cr, left_bias, door_height, distance);
-	line_to_3(cr, left_bias, door_height, distance+door_width);
-	line_to_3(cr, left_bias, 0.0, distance+door_width);
-	line_to_3(cr, left_bias, 0.0, distance);
-	cairo_stroke_preserve(cr);
-	door_fill_color(cr);
-	cairo_fill(cr);
-}
-
-void right_door(cairo_t *cr, float distance)
-{
-	distance += (10.0 - door_width)/2.0;
-	door_outline_color(cr);
-	move_to_3(cr, left_bias + 10.0, 0.0, distance);
-	line_to_3(cr, left_bias + 10.0, door_height, distance);
-	line_to_3(cr, left_bias + 10.0, door_height, distance+door_width);
-	line_to_3(cr, left_bias + 10.0, 0.0, distance+door_width);
-	line_to_3(cr, left_bias + 10.0, 0.0, distance);
-	cairo_stroke_preserve(cr);
-	door_fill_color(cr);
-	cairo_fill(cr);
-}
-
-void door(cairo_t *cr, float distance)
-{
-	float door_start = (10.0 - door_width) / 2;
-	
-	door_outline_color(cr);
-	move_to_3(cr, left_bias + door_start, 0.0, distance);
-	line_to_3(cr, left_bias + door_start, door_height, distance);
-	line_to_3(cr, left_bias + door_start+door_width, door_height, distance);
-	line_to_3(cr, left_bias + door_start+door_width, 0.0, distance);
-	line_to_3(cr, left_bias + door_start, 0.0, distance);
-	cairo_stroke_preserve(cr);
-	door_fill_color(cr);
-	cairo_fill(cr);
-}
-
-void open_door(cairo_t *cr, float distance)
-{
-	float door_start = (10.0 - door_width) / 2;
-	float door_end   = door_width + door_start;
-
-	printf("Drawing open door with left bias %f at distance %f\n", left_bias, distance);
-	wall_outline_color(cr);
-	move_to_3(cr, left_bias, 0.0, distance);
-	line_to_3(cr, left_bias + door_start, 0.0, distance);
-	line_to_3(cr, left_bias + door_start, door_height, distance);
-	line_to_3(cr, left_bias + door_end, door_height, distance);
-	line_to_3(cr, left_bias + door_end, 0.0, distance);
-	line_to_3(cr, left_bias + 10.0, 0.0, distance);
-	line_to_3(cr, left_bias + 10.0, 10.0, distance);
-	line_to_3(cr, left_bias, 10.0, distance);
-	line_to_3(cr, left_bias, 0.0, distance);
-	cairo_stroke_preserve(cr);
-	wall_fill_color(cr);
-	cairo_fill(cr);
-}
-
-void open_door_side(cairo_t *cr)
-{
-	float wall_depth = 2.0;
-	float wall_start = (10.0-wall_depth)/2.0 + left_bias;
-	float jamb_dist = door_width / 2.0;
-
-	door_outline_color(cr);
-	move_to_3(cr, wall_start, 0.0, jamb_dist);
-	line_to_3(cr, wall_start, door_height, jamb_dist);
-	line_to_3(cr, wall_start + wall_depth, door_height, jamb_dist);
-	line_to_3(cr, wall_start + wall_depth, 0.0, jamb_dist);
-	line_to_3(cr, wall_start, 0.0, jamb_dist);
-	cairo_stroke_preserve(cr);
-	door_fill_color(cr);
-	cairo_fill(cr);
-	door_outline_color(cr);
-	move_to_3(cr, wall_start, door_height, jamb_dist);
-	line_to_3(cr, wall_start, 10.0, 0.0);
-	line_to_3(cr, wall_start + wall_depth, 10.0, 0.0);
-	line_to_3(cr, wall_start + wall_depth, door_height, jamb_dist);
-	line_to_3(cr, wall_start, door_height, jamb_dist);
-	cairo_stroke_preserve(cr);
-	door_fill_color(cr);
-	cairo_fill(cr);
-}
-
-void right_wall(cairo_t *cr, float distance)
-{
-	printf ("Drawing right wall with left bias %f at distance %f\n", left_bias, distance);
-	wall_outline_color(cr);
-	move_to_3(cr, left_bias + 10.0, 0.0, distance);
-	line_to_3(cr, left_bias + 10.0, 0.0, distance+10.0);
-	line_to_3(cr, left_bias + 10.0, 10.0, distance+10.0);
-	line_to_3(cr, left_bias + 10.0, 10.0, distance);
-	line_to_3(cr, left_bias + 10.0, 0.0, distance);
-	cairo_stroke_preserve(cr);
-	wall_fill_color(cr);
-	cairo_fill(cr);
 }
 
 typedef void (*drawing_fn_t)(cairo_t *, int, int, int, float);
@@ -280,8 +63,8 @@ void draw_square (cairo_t *cr, int approach, int x, int y, float dist, drawing_f
 	{
 		drawfn(cr, approach, x, y, dist);
 	}
-	if (approach < 0) left_bias += 10.0;
-	if (approach > 0) left_bias -= 10.0;
+	if (approach < 0) modify_left_bias(10.0);
+	if (approach > 0) modify_left_bias(-10.0);
 }
 
 void iterate_east (cairo_t *cr, int steps, drawing_fn_t drawfn)
@@ -292,13 +75,13 @@ void iterate_east (cairo_t *cr, int steps, drawing_fn_t drawfn)
 	if (x >= map_width(current_map))
 		return;
 
-	left_bias -=10.0;
+	modify_left_bias(-10.0);
 	for (int y = player_y - steps-1; y < player_y; y++)
 	{
 		draw_square (cr, y-player_y, x, y, dist, drawfn);
 	}
-	left_bias = steps * 10.0;
-	left_bias +=10.0;
+	set_left_bias(steps * 10.0);
+	modify_left_bias(10.0);
 	for (int y = player_y + steps+1; y >= player_y;  y--)
 	{
 		draw_square (cr, y-player_y, x, y, dist, drawfn);
@@ -313,13 +96,13 @@ void iterate_north (cairo_t *cr, int steps, drawing_fn_t drawfn)
 	if (y < 0)
 		return;
 
-	left_bias -= 10.0;
+	modify_left_bias(-10.0);
 	for (int x = player_x - steps -1; x < player_x; x++)
 	{
 		draw_square (cr, x-player_x, x, y, dist, drawfn);
 	}
-	left_bias = steps * 10.0;
-	left_bias += 10.0;
+	set_left_bias(steps * 10.0);
+	modify_left_bias(10.0);
 	for (int x = player_x + steps +1; x >= player_x; x--)
 	{
 		draw_square (cr, x-player_x, x, y, dist, drawfn);
@@ -333,13 +116,13 @@ void iterate_west (cairo_t *cr, int steps, drawing_fn_t drawfn)
 
 	if (x < 0) return;
 
-	left_bias -=10;
+	modify_left_bias(-10);
 	for (int y = player_y + steps+ 1; y > player_y; y--)
 	{
 		draw_square (cr, player_y-y, x, y, dist, drawfn);
 	}
-	left_bias = steps * 10.0;
-	left_bias +=10;
+	set_left_bias(steps * 10.0);
+	modify_left_bias(10);
 	for (int y = player_y - steps -1; y <= player_y; y++)
 	{
 		draw_square (cr, player_y-y, x, y, dist, drawfn);
@@ -352,13 +135,13 @@ void iterate_south (cairo_t *cr, int steps, drawing_fn_t drawfn)
 	float dist = steps * 10.0;
 	if (y > map_height(current_map)) return;
 
-	left_bias -= 10.0;
+	modify_left_bias(-10.0);
 	for (int x = player_x + steps + 1; x > player_x; x--)
 	{
 		draw_square (cr, player_x-x, x, y, dist, drawfn);
 	}
-	left_bias = 10.0*steps;
-	left_bias += 10.0;
+	set_left_bias(10.0*steps);
+	modify_left_bias(10.0);
 	for (int x = player_x - steps - 1; x <= player_x; x++)
 	{
 		draw_square (cr, player_x-x, x, y, dist, drawfn);
@@ -380,16 +163,6 @@ int horizontal()
 int vertical()
 {
 	return player_facing == DIRECTION_NORTH || player_facing == DIRECTION_SOUTH;
-}
-
-void do_door(cairo_t *cr, float dist)
-{
-	if (dist == 0.0) {
-		open_door(cr, dist);
-	} else {
-		wall(cr, dist);
-		door(cr, dist);
-	}
 }
 
 void draw_flat_back (cairo_t *cr, int hand, int x, int y, float dist)
@@ -417,18 +190,6 @@ void draw_flat_front (cairo_t *cr, int hand, int x, int y, float dist)
 	wall(cr, dist); 
 }
 
-void both_walls(cairo_t *cr, float dist)
-{
-	left_wall(cr, dist);
-	right_wall(cr, dist);
-}
-
-void both_doors(cairo_t *cr, float dist)
-{
-	left_door(cr, dist);
-	right_door(cr, dist);
-}
-
 void draw_core (cairo_t *cr, int hand, int x, int y, float dist)
 {
 	void (*wallfn)(cairo_t*,float) = right_wall;
@@ -446,12 +207,6 @@ void draw_core (cairo_t *cr, int hand, int x, int y, float dist)
 	}
 }
 
-/*
-void a ()
-{
-}
-*/
-
 void paint(void)
 {
 	void *pixels;
@@ -461,7 +216,7 @@ void paint(void)
 	{
 		cairo_surface_t *cairo_surface =
 			cairo_image_surface_create_for_data(
-				pixels, CAIRO_FORMAT_ARGB32, width, height, pitch);
+				pixels, CAIRO_FORMAT_ARGB32, display_width(), display_height(), pitch);
 		cairo_t *cr = cairo_create(cairo_surface);
 
 		// clear to black
@@ -477,60 +232,13 @@ void paint(void)
 		cairo_set_source_rgb(cr, 255, 255, 255);
 		for (int steps = 5; steps >= -2; steps--) {
 			printf ("Step: %i\n", steps);
-//			left_bias = steps * -10.0;
+//			set_left_bias(steps * -10.0);
 //			iterator[player_facing] (cr, steps, draw_flat_back);
-			left_bias = steps * -10.0;
+			set_left_bias(steps * -10.0);
 			iterator[player_facing] (cr, steps, draw_core);
-			left_bias = steps * -10.0;
+			set_left_bias(steps * -10.0);
 			iterator[player_facing] (cr, steps, draw_flat_front);
 		}
-	
-/*
-		cairo_move_to(cr, 50.0, 50.0);
-		cairo_line_to(cr, 100.0, 100.0);
-*/
-/*
-// flat 3
-		left_bias = -30.0;
-		wall(cr, 30.0);
-		left_bias = -20.0;
-		wall(cr, 30.0);
-		left_bias = 10.0;
-		wall(cr, 30.0);
-
-// line 2
-		left_bias = -10.0;
-		left_wall(cr, 20.0);
-		left_bias = 0.0;
-		left_wall(cr, 20.0);
-		left_bias = 10.0;
-		right_wall(cr, 20.0);
-
-// flat 2
-		left_bias = -10.0;
-		wall(cr, 20.0);
-		door(cr, 20.0);
-		left_bias = 10.0;
-		wall(cr, 20.0);
-
-// line 1
-		left_bias = 0.0;
-		right_wall(cr, 10.0);
-
-// flat 1
-		left_bias = 10.0;
-		wall(cr, 10.0);
-*/
-/*
-		door(cr, 20.0);
-		left_wall(cr, 10.0);
-		right_wall(cr, 10.0);
-		left_wall(cr, 0.0);
-		right_wall(cr, 0.0);
-		left_door(cr, 2.5);
-		right_door(cr, 12.5);
-	//	open_door(cr, 0.0);
-*/
 		cairo_destroy(cr);
 		// should I do this?
 		cairo_surface_destroy(cairo_surface);
