@@ -17,7 +17,9 @@
  *  along with This program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define _GNU_SOURCE
 #include <math.h> // powf
+#include <stdio.h>
 
 #include <SDL.h>
 #include <cairo.h>
@@ -34,7 +36,6 @@ struct map * current_map;
 SDL_Window   *window;
 SDL_Renderer *renderer;
 SDL_Texture  *texture, *stats_texture;
-void         *pixels;
 
 int stats_height()
 {
@@ -43,7 +44,7 @@ int stats_height()
 
 int stats_width()
 {
-	return 240;
+	return display_width()+240;
 }
 
 int window_height()
@@ -53,7 +54,7 @@ int window_height()
 
 int window_width()
 {
-	return display_height() + stats_width() + 2;
+	return stats_width() + 2;
 }
 
 void window_setup (void)
@@ -227,26 +228,51 @@ void draw_core (cairo_t *cr, int hand, int x, int y, float dist)
 	}
 }
 
-void cairoize(cairo_surface_t **psurface, cairo_t **pcr)
+void cairoize(SDL_Texture *t, int w, int h, cairo_surface_t **psurface, cairo_t **pcr)
 {
 	void *pixels;
 	int   pitch;
 
-	SDL_LockTexture(texture, NULL, &pixels, &pitch);
+	SDL_LockTexture(t, NULL, &pixels, &pitch);
 	{
 		*psurface =
 			cairo_image_surface_create_for_data(
-				pixels, CAIRO_FORMAT_ARGB32, display_width(), display_height(), pitch);
+				pixels, CAIRO_FORMAT_ARGB32, w, h, pitch);
 		*pcr = cairo_create(*psurface);
 	}
 }
 
-void decairoize(cairo_surface_t *cairo_surface, cairo_t *cr)
+void decairoize(SDL_Texture *t, cairo_surface_t *cairo_surface, cairo_t *cr)
 {
 	cairo_destroy(cr);
 	// should I do this?
 	cairo_surface_destroy(cairo_surface);
-	SDL_UnlockTexture(texture);
+	SDL_UnlockTexture(t);
+}
+
+void paint_stats(void)
+{
+	cairo_surface_t *cairo_surface;
+	cairo_t         *cr;
+
+	cairoize(stats_texture, stats_width(), stats_height(), &cairo_surface, &cr);
+	// clear to black
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_paint(cr);
+
+	cairo_set_source_rgb(cr, 255, 255, 255);
+	cairo_select_font_face(cr, "Mono", CAIRO_FONT_SLANT_NORMAL,
+		CAIRO_FONT_WEIGHT_NORMAL);
+	cairo_set_font_size(cr, 18.0);
+	cairo_move_to(cr, 10.0, 20.0);
+	{
+		char *buffer = NULL;
+		asprintf(&buffer, "Gold: %i", player_gold());
+		cairo_show_text(cr, buffer);
+		free(buffer);
+	}
+	cairo_set_source_rgb(cr, 255, 255, 255);
+	decairoize(stats_texture, cairo_surface, cr);
 }
 
 void paint_view(void)
@@ -254,7 +280,7 @@ void paint_view(void)
 	cairo_surface_t *cairo_surface;
 	cairo_t         *cr;
 
-	cairoize(&cairo_surface, &cr);
+	cairoize(texture, display_width(), display_height(), &cairo_surface, &cr);
 	// clear to black
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_paint(cr);
@@ -272,7 +298,17 @@ void paint_view(void)
 		set_left_bias(steps * -10.0);
 		iterator[player_facing()] (cr, steps, draw_flat_front);
 	}
-	decairoize(cairo_surface, cr);
+	decairoize(texture, cairo_surface, cr);
+}
+
+void draw_frame (SDL_Rect r)
+{
+	r.x -=1;
+	r.y -=1;
+	r.w +=1;
+	r.w +=1;
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	SDL_RenderDrawRect(renderer, &r);
 }
 
 void paint(void)
@@ -281,12 +317,12 @@ void paint(void)
 	{
 		SDL_Rect r = {1, 1, display_width(), display_height()};
 		SDL_RenderCopy(renderer, texture, NULL, &r);
-		r.x -=1;
-		r.y -=1;
-		r.w +=1;
-		r.h +=1;
-		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-		SDL_RenderDrawRect(renderer, &r);
+		draw_frame(r);
+
+		r.x = 1; r.y = display_height() + 2;
+		r.w = stats_width(); r.h = stats_height();
+		SDL_RenderCopy(renderer, stats_texture, NULL, &r);
+		draw_frame(r);
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	}
 	SDL_RenderPresent(renderer);
@@ -445,6 +481,7 @@ int main (int argc, char *argv[])
 	while (!quitflag) {
 		if (is_dirty()) {
 			paint_view();
+			paint_stats();
 			paint();
 			mark_clean();
 		}
