@@ -28,6 +28,7 @@
 #include "map_loader.h"
 #include "player.h"
 
+#define message printf
 struct map * current_map;
 
 SDL_Window   *window;
@@ -350,6 +351,22 @@ void turn_left(void)
 	mark_dirty();
 }
 
+int treasure_max ()
+{
+	return 10;
+}
+
+void do_get(void)
+{
+	if (map_tile(current_map, player_x(), player_y()) == 'T') {
+		int gold = rand() % treasure_max() + 1;
+		player_modify_gold(gold);
+		message("You found %i gold!\n", gold);
+		map_set_tile(current_map, player_x(), player_y(), '.');
+		mark_dirty();
+	}
+}
+
 int quitflag = 0;
 
 void handle_input (void)
@@ -365,6 +382,7 @@ void handle_input (void)
 					case SDLK_LEFT: turn_left(); break;
 					case SDLK_RIGHT: turn_right(); break;
 					case SDLK_q: quitflag = 1;
+					case SDLK_g: do_get(); break;
 				}
 			}
 		}
