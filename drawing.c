@@ -100,7 +100,6 @@ void line_to_3(cairo_t *cr, float x, float y, float z)
 
 void wall(cairo_t *cr, float distance)
 {
-	printf ("Drawing wall with left bias %f at distance %f\n", left_bias, distance);
 	wall_outline_color(cr);
 	move_to_3(cr, left_bias, 0.0, distance);
 	line_to_3(cr, left_bias + 10.0, 0.0, distance);
@@ -114,7 +113,6 @@ void wall(cairo_t *cr, float distance)
 
 void left_wall(cairo_t *cr, float distance)
 {
-	printf ("Drawing left wall with left bias %f at distance %f\n", left_bias, distance);
 	wall_outline_color(cr);
 	move_to_3(cr, left_bias, 0.0, distance);
 	line_to_3(cr, left_bias, 0.0, distance+10.0);
@@ -174,7 +172,6 @@ void open_door(cairo_t *cr, float distance)
 	float door_start = (10.0 - door_width) / 2;
 	float door_end   = door_width + door_start;
 
-	printf("Drawing open door with left bias %f at distance %f\n", left_bias, distance);
 	wall_outline_color(cr);
 	move_to_3(cr, left_bias, 0.0, distance);
 	line_to_3(cr, left_bias + door_start, 0.0, distance);
@@ -296,7 +293,6 @@ void chest(cairo_t *cr, float distance)
 
 void right_wall(cairo_t *cr, float distance)
 {
-	printf ("Drawing right wall with left bias %f at distance %f\n", left_bias, distance);
 	wall_outline_color(cr);
 	move_to_3(cr, left_bias + 10.0, 0.0, distance);
 	line_to_3(cr, left_bias + 10.0, 0.0, distance+10.0);

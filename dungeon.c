@@ -233,9 +233,6 @@ void paint(void)
 		cairo_show_text(cr, "Hello, world!");
 		cairo_set_source_rgb(cr, 255, 255, 255);
 		for (int steps = 5; steps >= -2; steps--) {
-			printf ("Step: %i\n", steps);
-//			set_left_bias(steps * -10.0);
-//			iterator[player_facing] (cr, steps, draw_flat_back);
 			set_left_bias(steps * -10.0);
 			iterator[player_facing] (cr, steps, draw_core);
 			set_left_bias(steps * -10.0);
