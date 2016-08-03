@@ -22,19 +22,11 @@
 #include <SDL.h>
 #include <cairo.h>
 
+#include "direction.h"
 #include "drawing.h"
 #include "map.h"
 #include "map_loader.h"
-
-enum {
-	DIRECTION_NORTH = 0,
-	DIRECTION_EAST,
-	DIRECTION_SOUTH,
-	DIRECTION_WEST
-};
-
-int player_x = 1, player_y = 1;
-int player_facing = DIRECTION_EAST;
+#include "player.h"
 
 struct map * current_map;
 
@@ -43,10 +35,21 @@ SDL_Renderer *renderer;
 SDL_Texture  *texture;
 void         *pixels;
 
+int window_height()
+{
+	return display_height() + 240;
+}
+
+int window_width()
+{
+	return display_height() + 240;
+}
+
 void window_setup (void)
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
-	window   = SDL_CreateWindow("Cairo!", 20, 20, display_width(), display_height(), 0);
+	window   = SDL_CreateWindow("Cairo!", 20, 20,
+		window_width(), window_height(), 0);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	texture  = SDL_CreateTexture(
 		renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
@@ -70,81 +73,81 @@ void draw_square (cairo_t *cr, int approach, int x, int y, float dist, drawing_f
 void iterate_east (cairo_t *cr, int steps, drawing_fn_t drawfn)
 {
 	float dist = steps * 10.0;
-	int x = player_x + steps;
+	int x = player_x() + steps;
 
 	if (x >= map_width(current_map))
 		return;
 
 	modify_left_bias(-10.0);
-	for (int y = player_y - steps-1; y < player_y; y++)
+	for (int y = player_y() - steps-1; y < player_y(); y++)
 	{
-		draw_square (cr, y-player_y, x, y, dist, drawfn);
+		draw_square (cr, y-player_y(), x, y, dist, drawfn);
 	}
 	set_left_bias(steps * 10.0);
 	modify_left_bias(10.0);
-	for (int y = player_y + steps+1; y >= player_y;  y--)
+	for (int y = player_y() + steps+1; y >= player_y();  y--)
 	{
-		draw_square (cr, y-player_y, x, y, dist, drawfn);
+		draw_square (cr, y-player_y(), x, y, dist, drawfn);
 	}
 }
 
 void iterate_north (cairo_t *cr, int steps, drawing_fn_t drawfn)
 {
-	int y = player_y - steps;
+	int y = player_y() - steps;
 	float dist = steps * 10.0;
 
 	if (y < 0)
 		return;
 
 	modify_left_bias(-10.0);
-	for (int x = player_x - steps -1; x < player_x; x++)
+	for (int x = player_x() - steps -1; x < player_x(); x++)
 	{
-		draw_square (cr, x-player_x, x, y, dist, drawfn);
+		draw_square (cr, x-player_x(), x, y, dist, drawfn);
 	}
 	set_left_bias(steps * 10.0);
 	modify_left_bias(10.0);
-	for (int x = player_x + steps +1; x >= player_x; x--)
+	for (int x = player_x() + steps +1; x >= player_x(); x--)
 	{
-		draw_square (cr, x-player_x, x, y, dist, drawfn);
+		draw_square (cr, x-player_x(), x, y, dist, drawfn);
 	}
 }
 
 void iterate_west (cairo_t *cr, int steps, drawing_fn_t drawfn)
 {
-	int x = player_x - steps;
+	int x = player_x() - steps;
 	float dist = steps * 10.0;
 
 	if (x < 0) return;
 
 	modify_left_bias(-10);
-	for (int y = player_y + steps+ 1; y > player_y; y--)
+	for (int y = player_y() + steps+ 1; y > player_y(); y--)
 	{
-		draw_square (cr, player_y-y, x, y, dist, drawfn);
+		draw_square (cr, player_y()-y, x, y, dist, drawfn);
 	}
 	set_left_bias(steps * 10.0);
 	modify_left_bias(10);
-	for (int y = player_y - steps -1; y <= player_y; y++)
+	for (int y = player_y() - steps -1; y <= player_y(); y++)
 	{
-		draw_square (cr, player_y-y, x, y, dist, drawfn);
+		draw_square (cr, player_y()-y, x, y, dist, drawfn);
 	}
 }
 
 void iterate_south (cairo_t *cr, int steps, drawing_fn_t drawfn)
 {
-	int y = player_y + steps;
+	int y = player_y() + steps;
 	float dist = steps * 10.0;
 	if (y > map_height(current_map)) return;
 
 	modify_left_bias(-10.0);
-	for (int x = player_x + steps + 1; x > player_x; x--)
+	for (int x = player_x() + steps + 1; x > player_x(); x--)
 	{
-		draw_square (cr, player_x-x, x, y, dist, drawfn);
+		draw_square (cr, player_x()-x, x, y, dist, drawfn);
 	}
 	set_left_bias(10.0*steps);
 	modify_left_bias(10.0);
-	for (int x = player_x - steps - 1; x <= player_x; x++)
+	for (int x = player_x() - steps - 1; x <= player_x(); x++)
 	{
-		draw_square (cr, player_x-x, x, y, dist, drawfn);
+		draw_square (cr, player_x()-x, x, y, dist, drawfn);
 	}
 }
 
@@ -157,12 +160,12 @@ void (*iterator[])(cairo_t *, int, void (*fn)(cairo_t *, int, int, int, float))=
 
 int horizontal()
 {
-	return player_facing == DIRECTION_EAST || player_facing == DIRECTION_WEST;
+	return player_facing() == DIRECTION_EAST || player_facing() == DIRECTION_WEST;
 }
 
 int vertical()
 {
-	return player_facing == DIRECTION_NORTH || player_facing == DIRECTION_SOUTH;
+	return player_facing() == DIRECTION_NORTH || player_facing() == DIRECTION_SOUTH;
 }
 
 void draw_flat_back (cairo_t *cr, int hand, int x, int y, float dist)
@@ -234,9 +237,9 @@ void paint(void)
 		cairo_set_source_rgb(cr, 255, 255, 255);
 		for (int steps = 5; steps >= -2; steps--) {
 			set_left_bias(steps * -10.0);
-			iterator[player_facing] (cr, steps, draw_core);
+			iterator[player_facing()] (cr, steps, draw_core);
 			set_left_bias(steps * -10.0);
-			iterator[player_facing] (cr, steps, draw_flat_front);
+			iterator[player_facing()] (cr, steps, draw_flat_front);
 		}
 		cairo_destroy(cr);
 		// should I do this?
@@ -244,7 +247,17 @@ void paint(void)
 	}
 	SDL_UnlockTexture(texture);
 	SDL_RenderClear(renderer);
-	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	{
+		SDL_Rect r = {1, 1, display_width(), display_height()};
+		SDL_RenderCopy(renderer, texture, NULL, &r);
+		r.x -=1;
+		r.y -=1;
+		r.w +=1;
+		r.h +=1;
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+		SDL_RenderDrawRect(renderer, &r);
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	}
 	SDL_RenderPresent(renderer);
 }
 
@@ -293,51 +306,47 @@ void on_moved(int oldx, int oldy, int newx, int newy)
 
 void move_forward(void)
 {
-	int newx = player_x, newy = player_y;
-	switch (player_facing) {
+	int newx = player_x(), newy = player_y();
+	switch (player_facing()) {
 		case DIRECTION_EAST: newx += 1; break;
 		case DIRECTION_WEST: newx -= 1; break;
 		case DIRECTION_NORTH: newy -= 1; break;
 		case DIRECTION_SOUTH: newy += 1; break;
 	}
 	if (map_tile(current_map, newx, newy) != 'X') {
-		on_moved(player_x, player_y, newx, newy);
-		player_x = newx;
-		player_y = newy;
+		on_moved(player_x(), player_y(), newx, newy);
+		player_set_x(newx);
+		player_set_y(newy);
 		mark_dirty();
 	}
 }
 
 void move_backward(void)
 {
-	int newx = player_x, newy = player_y;
-	switch (player_facing) {
+	int newx = player_x(), newy = player_y();
+	switch (player_facing()) {
 		case DIRECTION_EAST: newx -= 1; break;
 		case DIRECTION_WEST: newx += 1; break;
 		case DIRECTION_NORTH: newy += 1; break;
 		case DIRECTION_SOUTH: newy -= 1; break;
 	}
 	if (map_tile(current_map, newx, newy) != 'X') {
-		on_moved(player_x, player_y, newx, newy);
-		player_x = newx;
-		player_y = newy;
+		on_moved(player_x(), player_y(), newx, newy);
+		player_set_x(newx);
+		player_set_y(newy);
 		mark_dirty();
 	}
 }
 
 void turn_right(void)
 {
-	player_facing += 1;
-	if (player_facing > DIRECTION_WEST)
-		player_facing = DIRECTION_NORTH;
+	player_turn_right();
 	mark_dirty();
 }
 
 void turn_left(void)
 {
-	player_facing -= 1;
-	if (player_facing < DIRECTION_NORTH)
-		player_facing = DIRECTION_WEST;
+	player_turn_left();
 	mark_dirty();
 }
 

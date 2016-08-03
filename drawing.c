@@ -26,8 +26,8 @@
 
 #define INCHES(x) ((x)/12.0)
 
-static const int height = 640;
-static const int width  = 640;
+static const int height = 480;
+static const int width  = 480;
 static const int door_height = 7.0;
 static const int door_width  = 5.0;
 
