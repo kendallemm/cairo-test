@@ -278,6 +278,19 @@ int is_dirty()
 	return dirty_flag;
 }
 
+void on_moved(int oldx, int oldy, int newx, int newy)
+{
+	if (map_tile(current_map, newx, newy) == 'T') {
+		printf ("Arr, there be treasure here!\n");
+	}
+	if (strchr("|-", map_tile(current_map, oldx, oldy))) {
+		printf("A door creaks closed behind you\n");
+	}
+	if (strchr("|-", map_tile(current_map, newx, newy))) {
+		printf("The door opens\n");
+	}
+}
+
 void move_forward(void)
 {
 	int newx = player_x, newy = player_y;
@@ -288,6 +301,7 @@ void move_forward(void)
 		case DIRECTION_SOUTH: newy += 1; break;
 	}
 	if (map_tile(current_map, newx, newy) != 'X') {
+		on_moved(player_x, player_y, newx, newy);
 		player_x = newx;
 		player_y = newy;
 		mark_dirty();
@@ -304,6 +318,7 @@ void move_backward(void)
 		case DIRECTION_SOUTH: newy -= 1; break;
 	}
 	if (map_tile(current_map, newx, newy) != 'X') {
+		on_moved(player_x, player_y, newx, newy);
 		player_x = newx;
 		player_y = newy;
 		mark_dirty();
