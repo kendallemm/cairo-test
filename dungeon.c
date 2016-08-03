@@ -33,17 +33,27 @@ struct map * current_map;
 
 SDL_Window   *window;
 SDL_Renderer *renderer;
-SDL_Texture  *texture;
+SDL_Texture  *texture, *stats_texture;
 void         *pixels;
+
+int stats_height()
+{
+	return 240;
+}
+
+int stats_width()
+{
+	return 240;
+}
 
 int window_height()
 {
-	return display_height() + 240;
+	return display_height() + stats_height() + 2;
 }
 
 int window_width()
 {
-	return display_height() + 240;
+	return display_height() + stats_width() + 2;
 }
 
 void window_setup (void)
@@ -55,6 +65,10 @@ void window_setup (void)
 	texture  = SDL_CreateTexture(
 		renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
 		display_width(), display_height()
+	);
+	stats_texture = SDL_CreateTexture(
+		renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
+		stats_width(), stats_height()
 	);
 }
 
@@ -213,40 +227,56 @@ void draw_core (cairo_t *cr, int hand, int x, int y, float dist)
 	}
 }
 
-void paint(void)
+void cairoize(cairo_surface_t **psurface, cairo_t **pcr)
 {
 	void *pixels;
 	int   pitch;
 
 	SDL_LockTexture(texture, NULL, &pixels, &pitch);
 	{
-		cairo_surface_t *cairo_surface =
+		*psurface =
 			cairo_image_surface_create_for_data(
 				pixels, CAIRO_FORMAT_ARGB32, display_width(), display_height(), pitch);
-		cairo_t *cr = cairo_create(cairo_surface);
-
-		// clear to black
-		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_paint(cr);
-
-		cairo_set_source_rgb(cr, 255, 0, 0);
-		cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
-			CAIRO_FONT_WEIGHT_NORMAL);
-		cairo_set_font_size(cr, 40.0);
-		cairo_move_to(cr, 10.0, 50.0);
-		cairo_show_text(cr, "Hello, world!");
-		cairo_set_source_rgb(cr, 255, 255, 255);
-		for (int steps = 5; steps >= -2; steps--) {
-			set_left_bias(steps * -10.0);
-			iterator[player_facing()] (cr, steps, draw_core);
-			set_left_bias(steps * -10.0);
-			iterator[player_facing()] (cr, steps, draw_flat_front);
-		}
-		cairo_destroy(cr);
-		// should I do this?
-		cairo_surface_destroy(cairo_surface);
+		*pcr = cairo_create(*psurface);
 	}
+}
+
+void decairoize(cairo_surface_t *cairo_surface, cairo_t *cr)
+{
+	cairo_destroy(cr);
+	// should I do this?
+	cairo_surface_destroy(cairo_surface);
 	SDL_UnlockTexture(texture);
+}
+
+void paint_view(void)
+{
+	cairo_surface_t *cairo_surface;
+	cairo_t         *cr;
+
+	cairoize(&cairo_surface, &cr);
+	// clear to black
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_paint(cr);
+
+	cairo_set_source_rgb(cr, 255, 0, 0);
+	cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
+		CAIRO_FONT_WEIGHT_NORMAL);
+	cairo_set_font_size(cr, 40.0);
+	cairo_move_to(cr, 10.0, 50.0);
+	cairo_show_text(cr, "Hello, world!");
+	cairo_set_source_rgb(cr, 255, 255, 255);
+	for (int steps = 5; steps >= -2; steps--) {
+		set_left_bias(steps * -10.0);
+		iterator[player_facing()] (cr, steps, draw_core);
+		set_left_bias(steps * -10.0);
+		iterator[player_facing()] (cr, steps, draw_flat_front);
+	}
+	decairoize(cairo_surface, cr);
+}
+
+void paint(void)
+{
 	SDL_RenderClear(renderer);
 	{
 		SDL_Rect r = {1, 1, display_width(), display_height()};
@@ -414,6 +444,7 @@ int main (int argc, char *argv[])
 	mark_dirty();
 	while (!quitflag) {
 		if (is_dirty()) {
+			paint_view();
 			paint();
 			mark_clean();
 		}
