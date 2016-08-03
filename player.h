@@ -19,8 +19,8 @@
  *  along with This program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-int set_gold(int amount);
-int modify_gold(int amount);
+int player_set_gold(int amount);
+int player_modify_gold(int amount);
 int player_gold();
 int player_facing();
 int player_y();

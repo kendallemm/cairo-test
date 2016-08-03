@@ -54,13 +54,13 @@ int player_gold()
 	return gold;
 }
 
-int modify_gold(int amount)
+int player_modify_gold(int amount)
 {
 	gold += amount;
 	return gold;
 }
 
-int set_gold(int amount)
+int player_set_gold(int amount)
 {
 	return gold = amount;
 }
