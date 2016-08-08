@@ -294,7 +294,7 @@ void paint_view(void)
 	cairo_move_to(cr, 10.0, 50.0);
 	cairo_show_text(cr, "Hello, world!");
 	cairo_set_source_rgb(cr, 255, 255, 255);
-	for (int steps = 5; steps >= -2; steps--) {
+	for (int steps = 5; steps >= 0; steps--) {
 		set_left_bias(steps * -10.0);
 		iterator[player_facing()] (cr, steps, draw_core);
 		set_left_bias(steps * -10.0);
