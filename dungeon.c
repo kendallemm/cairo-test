@@ -224,6 +224,8 @@ void draw_core (cairo_t *cr, int hand, int x, int y, float dist)
 		case 'X': wallfn(cr, dist); break;
 		case '|': wallfn(cr, dist); if (vertical ()) { doorfn(cr, dist); }; break;
 		case '-': wallfn(cr, dist); if (horizontal ()) { doorfn(cr, dist); }; break;
+		case 'D': ladder_down(cr, dist); break;
+		case 'U': ladder_up(cr, dist); break;
 		case '.': break;
 	}
 }

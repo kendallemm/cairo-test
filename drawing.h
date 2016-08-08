@@ -30,6 +30,8 @@ void do_door(cairo_t *cr, float dist);
 void both_walls(cairo_t *cr, float dist);
 void both_doors(cairo_t *cr, float dist);
 void chest(cairo_t *cr, float dist);
+void ladder_down(cairo_t *cr, float dist);
+void ladder_up(cairo_t *cr, float dist);
 
 float modify_left_bias(float amount);
 void set_left_bias(float amount);

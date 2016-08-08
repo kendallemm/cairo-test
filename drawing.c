@@ -35,7 +35,17 @@ static const int chest_height = INCHES(18.0);
 static const int chest_width  = INCHES(22.0);
 static const int chest_depth  = INCHES(14.0);
 
+const float ladder_height   = 4.2;
+const float ladder_width    = 2.0;
+const float rung_spacing    = 1.1;
+const float ladder_box_side = 4.0;
+
 static float left_bias = 0.0;
+
+void ladder_outline_color(cairo_t *cr)
+{
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+}
 
 void chest_outline_color(cairo_t *cr)
 {
@@ -291,6 +301,36 @@ void chest(cairo_t *cr, float distance)
 	cairo_fill(cr);
 }
 
+void draw_ladder(cairo_t *cr, float distance,
+	float ladder_left, float ladder_right,
+	float ladder_top, float ladder_bottom)
+{
+	float halfway = distance + 10.0 / 2.0;
+	ladder_outline_color(cr);
+	/* The ladder */
+	move_to_3(cr, left_bias + ladder_left, ladder_bottom, halfway);
+	line_to_3(cr, left_bias + ladder_left, ladder_top, halfway);
+	cairo_stroke(cr);
+	move_to_3(cr, left_bias + ladder_right, ladder_bottom, halfway);
+	line_to_3(cr, left_bias + ladder_right, ladder_top, halfway);
+	cairo_stroke(cr);
+	{ /* rungs */
+		float rung;
+		if (ladder_bottom > 0) {
+			rung = ladder_bottom + rung_spacing;
+		} else {
+			float nrungs = (ladder_top - ladder_bottom) / rung_spacing - 1.0;
+			
+			rung = ladder_bottom + rung_spacing * modff(nrungs, &nrungs);
+		}
+		for (; rung < ladder_top; rung += rung_spacing) {
+			move_to_3(cr, left_bias + ladder_left, rung, halfway);
+			line_to_3(cr, left_bias + ladder_right, rung, halfway);
+			cairo_stroke(cr);
+		}
+	}
+}
+
 void right_wall(cairo_t *cr, float distance)
 {
 	wall_outline_color(cr);
@@ -302,6 +342,42 @@ void right_wall(cairo_t *cr, float distance)
 	cairo_stroke_preserve(cr);
 	wall_fill_color(cr);
 	cairo_fill(cr);
+}
+
+void ladder_down(cairo_t *cr, float distance)
+{
+	/*
+	 * down ladders have boxes on the floor for the hole
+	 * and then a ladder poking up.
+	 * Everything is just lines, so no need to get cranky about drawing order
+	 * ladders extend up 4 feet and are 2 feet wide.
+	 * Rungs are 1.5 feet apart.
+    * The hole boxes are 4x4
+	 */
+
+	float ladder_left  = (10.0 - ladder_width) / 2.0;
+	float ladder_right = (10.0 + ladder_width) / 2.0;
+	float ladder_top   = ladder_height;
+	float ladder_bottom = 0;
+	draw_ladder(cr, distance, ladder_left, ladder_right, ladder_top, ladder_bottom);
+}
+
+void ladder_up(cairo_t *cr, float distance)
+{
+	/*
+	 * down ladders have boxes on the floor for the hole
+	 * and then a ladder poking up.
+	 * Everything is just lines, so no need to get cranky about drawing order
+	 * ladders extend up 4 feet and are 2 feet wide.
+	 * Rungs are 1.5 feet apart.
+    * The hole boxes are 4x4
+	 */
+
+	float ladder_left  = (10.0 - ladder_width) / 2.0;
+	float ladder_right = (10.0 + ladder_width) / 2.0;
+	float ladder_top   = 10.0;
+	float ladder_bottom = 10.0 - ladder_height;
+	draw_ladder(cr, distance, ladder_left, ladder_right, ladder_top, ladder_bottom);
 }
 
 void do_door(cairo_t *cr, float dist)
