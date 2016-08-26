@@ -67,18 +67,14 @@ void door_fill_color(cairo_t *cr)
 	cairo_set_source_rgb(cr, 0.5, 0.5, 0.0);
 }
 
-void wall_outline_color(cairo_t *cr)
+void wall_color_light(cairo_t *cr)
 {
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-}
-
-void wall_fill_color(cairo_t *cr)
-{
-	static float r = 0.0, g = 0.0, b = 0.0;
+	cairo_set_source_rgb(cr, 0.60, 0.450, 0.30);
 	
-	cairo_set_source_rgb(cr, r, g, b);
-	r = (1.0+r/2.0);
-	b += 1.0/20.0;
+}
+void wall_color_dark(cairo_t *cr)
+{
+	cairo_set_source_rgb(cr, 0.50, 0.350, 0.25);
 }
 
 void eye_3_to_2(float x, float y, float z, float *out_x, float *out_y)
@@ -110,27 +106,27 @@ void line_to_3(cairo_t *cr, float x, float y, float z)
 
 void wall(cairo_t *cr, float distance)
 {
-	wall_outline_color(cr);
+	wall_color_dark(cr);
 	move_to_3(cr, left_bias, 0.0, distance);
 	line_to_3(cr, left_bias + 10.0, 0.0, distance);
 	line_to_3(cr, left_bias + 10.0, 10.0, distance);
 	line_to_3(cr, left_bias, 10.0, distance);
 	line_to_3(cr, left_bias, 0.0, distance);
 	cairo_stroke_preserve(cr);
-	wall_fill_color(cr);
+	wall_color_light(cr);
 	cairo_fill(cr);
 }
 
 void left_wall(cairo_t *cr, float distance)
 {
-	wall_outline_color(cr);
+	wall_color_dark(cr);
 	move_to_3(cr, left_bias, 0.0, distance);
 	line_to_3(cr, left_bias, 0.0, distance+10.0);
 	line_to_3(cr, left_bias, 10.0, distance+10.0);
 	line_to_3(cr, left_bias, 10.0, distance);
 	line_to_3(cr, left_bias, 0.0, distance);
 	cairo_stroke_preserve(cr);
-	wall_fill_color(cr);
+	wall_color_light(cr);
 	cairo_fill(cr);
 }
 
@@ -333,14 +329,14 @@ void draw_ladder(cairo_t *cr, float distance,
 
 void right_wall(cairo_t *cr, float distance)
 {
-	wall_outline_color(cr);
+	wall_color_light(cr);
 	move_to_3(cr, left_bias + 10.0, 0.0, distance);
 	line_to_3(cr, left_bias + 10.0, 0.0, distance+10.0);
 	line_to_3(cr, left_bias + 10.0, 10.0, distance+10.0);
 	line_to_3(cr, left_bias + 10.0, 10.0, distance);
 	line_to_3(cr, left_bias + 10.0, 0.0, distance);
 	cairo_stroke_preserve(cr);
-	wall_fill_color(cr);
+	wall_color_dark(cr);
 	cairo_fill(cr);
 }
 
