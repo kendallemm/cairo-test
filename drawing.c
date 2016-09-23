@@ -178,7 +178,7 @@ void open_door(cairo_t *cr, float distance)
 	float door_start = (10.0 - door_width) / 2;
 	float door_end   = door_width + door_start;
 
-	wall_outline_color(cr);
+	wall_color_light(cr);
 	move_to_3(cr, left_bias, 0.0, distance);
 	line_to_3(cr, left_bias + door_start, 0.0, distance);
 	line_to_3(cr, left_bias + door_start, door_height, distance);
@@ -189,7 +189,7 @@ void open_door(cairo_t *cr, float distance)
 	line_to_3(cr, left_bias, 10.0, distance);
 	line_to_3(cr, left_bias, 0.0, distance);
 	cairo_stroke_preserve(cr);
-	wall_fill_color(cr);
+	wall_color_dark(cr);
 	cairo_fill(cr);
 }
 
